@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminLogin.jsx
 
 import React, { useState } from 'react';
-import { UserCog, ArrowLeft } from 'lucide-react'; // Yahan ArrowLeft add kiya h
+import { UserCog, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -10,6 +10,7 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // 👈 Yeh theek kar diya hai
   const navigate = useNavigate();
 
   const API_URL = import.meta.env.VITE_API_URL;
@@ -43,14 +44,13 @@ export default function AdminLogin() {
       <div className="w-full max-w-md glass-card rounded-2xl p-8 relative overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="absolute -top-10 -right-10 w-32 h-32 bg-red-600/20 blur-2xl rounded-full"></div>
         
-        {/* === BACK BUTTON YAHAN ADD KIYA HAI === */}
+        {/* === BACK BUTTON === */}
         <button 
           onClick={() => navigate('/')}
           className="flex items-center gap-2 text-[var(--text-muted)] hover:text-red-500 transition-colors font-black uppercase text-xs tracking-wider mb-6 relative z-10"
         >
           <ArrowLeft size={16} /> Back to Home
         </button>
-        {/* ======================================= */}
 
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-red-600/10 border border-red-600/50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(220,38,38,0.3)]">
@@ -74,17 +74,29 @@ export default function AdminLogin() {
               placeholder="Enter Admin ID"
             />
           </div>
+
+          {/* === PASSWORD FIELD WITH SHOW/HIDE BUTTON === */}
           <div>
             <label className="block text-[var(--text-muted)] text-xs font-black uppercase tracking-wider mb-2">Password</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              required
-              className="w-full theme-input rounded-lg py-3 px-4 focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(220,38,38,0.2)] transition-all font-bold"
-              placeholder="Enter Password"
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required
+                className="w-full theme-input rounded-lg py-3 px-4 pr-16 focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(220,38,38,0.2)] transition-all font-bold"
+                placeholder="Enter Password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold uppercase text-gray-400 hover:text-white px-2 py-1"
+              >
+                {showPassword ? "HIDE" : "SHOW"}
+              </button>
+            </div>
           </div>
+          {/* =========================================== */}
           
           <button 
             type="submit" 
