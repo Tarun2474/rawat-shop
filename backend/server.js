@@ -16,7 +16,7 @@ connectDB();
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://your-frontend-domain.vercel.app'], // Frontend URLs
+  origin: true,
   credentials: true
 }));
 app.use(express.json()); // To parse JSON data
