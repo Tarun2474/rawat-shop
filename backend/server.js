@@ -49,3 +49,24 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running in production-ready mode on port ${PORT}`);
 });
+
+const Admin = require('./models/Admin');
+const bcrypt = require('bcryptjs');
+
+// Auto create admin on startup
+async function createDefaultAdmin() {
+  try {
+    const existingAdmin = await Admin.findOne({ username: "Tarun004" });
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash("Rawat24004", 10);
+      await Admin.create({
+        username: "Tarun004",
+        password: hashedPassword
+      });
+      console.log("Default admin created successfully!");
+    }
+  } catch (err) {
+    console.log("Error creating admin:", err);
+  }
+}
+createDefaultAdmin();
