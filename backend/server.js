@@ -60,6 +60,7 @@ async function createDefaultAdmin() {
     if (!existingAdmin) {
       const hashedPassword = await bcrypt.hash("Rawat24004", 10);
       await Admin.create({
+        adminId: "1",
         username: "Tarun004",
         password: hashedPassword
       });
