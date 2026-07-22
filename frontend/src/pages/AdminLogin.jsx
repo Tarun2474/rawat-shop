@@ -27,8 +27,8 @@ export default function AdminLogin() {
       });
 
       if (data.success) {
-        // Save token securely in localStorage
-        localStorage.setItem('adminToken', data.token);
+        // Save token securely in sessionStorage
+        sessionStorage.setItem('adminToken', data.token);
         // Redirect to admin dashboard
         navigate('/admin/dashboard');
       }
