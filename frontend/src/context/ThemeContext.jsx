@@ -5,7 +5,14 @@ import React, { createContext, useState, useEffect } from 'react';
 export const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(localStorage.getItem('rawat_theme') || 'dark');
+  // Check localStorage first, otherwise fallback to system/phone preference (dark or light)
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = localStorage.getItem('rawat_theme');
+    if (savedTheme) {
+      return savedTheme;
+    }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
 
   useEffect(() => {
     // Save theme to localStorage
