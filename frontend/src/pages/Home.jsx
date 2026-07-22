@@ -163,7 +163,9 @@ export default function Home() {
             <p className="text-[var(--text-muted)] font-bold">Try adjusting your search query or category filters.</p>
           </div>
         )}
-      </div>
-    </div>
+        <footer className="text-center py-6 text-gray-500 text-sm mt-10">
+  © {new Date().getFullYear()} RAWAT SHOP. All rights reserved.
+</footer>
+    </div> 
   );
 }
