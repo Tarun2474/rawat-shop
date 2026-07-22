@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Eye, Download, Heart, Star, Share2 } from 'lucide-react';
 import axios from 'axios';
 
-export default function WallpaperCard({ wallpaper, onUpdateStats }) {
+export default function WallpaperCard({ wallpaper, onUpdateStats, onPreview }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isFav, setIsFav] = useState(false);
@@ -63,6 +63,7 @@ export default function WallpaperCard({ wallpaper, onUpdateStats }) {
   return (
     <div 
       className="card-container cursor-pointer" 
+      onClick={onPreview}
       onMouseEnter={() => {
         setIsHovered(true);
         recordAction('view'); // Record view on hover
