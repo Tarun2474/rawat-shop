@@ -16,7 +16,7 @@ export default function AdminSidebar() {
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
+    sessionStorage.removeItem('adminToken');
     navigate('/');
   };
 
