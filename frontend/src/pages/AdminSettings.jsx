@@ -11,7 +11,7 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL;
-  const token = localStorage.getItem('adminToken');
+  const token = sessionStorage.getItem('adminToken');
   const navigate = useNavigate();
 
   const handleUpdate = async (e) => {
@@ -36,7 +36,7 @@ export default function AdminSettings() {
         setStatus({ type: 'success', message: 'Credentials Updated Securely. Please login again with new credentials.' });
         // Logout user because token is invalid/old credentials changed
         setTimeout(() => {
-          localStorage.removeItem('adminToken');
+          sessionStorage.removeItem('adminToken');
           navigate('/admin');
         }, 3000);
       }
