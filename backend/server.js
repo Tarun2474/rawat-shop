@@ -32,8 +32,8 @@ const adminRoutes = require('./routes/adminRoutes');
 const wallpaperRoutes = require('./routes/wallpaperRoutes');
 
 // Use Routes
-app.use('/api/admin', adminRoutes);
-app.use('/api/wallpapers', wallpaperRoutes);
+app.use('/admin', adminRoutes);
+app.use('/wallpapers', wallpaperRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
