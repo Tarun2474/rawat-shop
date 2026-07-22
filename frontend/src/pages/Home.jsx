@@ -1,7 +1,7 @@
 // frontend/src/pages/Home.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search } from 'lucide-react';
+import { Search, X, Download, Eye, Heart } from 'lucide-react';
 import axios from 'axios';
 import WallpaperCard from '../components/WallpaperCard';
 
@@ -14,6 +14,9 @@ export default function Home() {
   const [activeMainCat, setActiveMainCat] = useState('Latest');
   const [activeSubCat, setActiveSubCat] = useState('All');
   const [loading, setLoading] = useState(true);
+
+  // State for Full-Screen Preview Modal
+  const [previewWallpaper, setPreviewWallpaper] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -61,7 +64,7 @@ export default function Home() {
   }, [wallpapers, searchQuery, activeMainCat, activeSubCat]);
 
   return (
-    <div className="w-full flex-1 flex flex-col">
+    <div className="w-full flex-1 flex flex-col relative">
       {/* Hero Section */}
       <div className="relative w-full h-[45vh] min-h-[350px] flex items-center justify-center overflow-hidden border-b border-[var(--glass-border)]">
         {/* Background Effects */}
@@ -97,7 +100,7 @@ export default function Home() {
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-[1600px] mx-auto w-full px-4 md:px-8 py-10">
+      <div className="max-w-[1600px] mx-auto w-full px-4 md:px-8 py-10 flex-1">
         
         {/* Main Categories */}
         <div className="flex gap-4 overflow-x-auto pb-4 mb-4 scrollbar-hide snap-x border-b border-[var(--glass-border)]">
@@ -151,7 +154,12 @@ export default function Home() {
         ) : filteredWallpapers.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredWallpapers.map((wp) => (
-              <WallpaperCard key={wp._id} wallpaper={wp} onUpdateStats={handleUpdateStats} />
+              <WallpaperCard 
+                key={wp._id} 
+                wallpaper={wp} 
+                onUpdateStats={handleUpdateStats} 
+                onPreview={() => setPreviewWallpaper(wp)}
+              />
             ))}
           </div>
         ) : (
@@ -163,10 +171,59 @@ export default function Home() {
             <p className="text-[var(--text-muted)] font-bold">Try adjusting your search query or category filters.</p>
           </div>
         )}
-        <footer className="text-center py-6 text-gray-500 text-sm mt-auto">
-  © {new Date().getFullYear()} RAWAT SHOP. All rights reserved.
-</footer>
-</div>
+      </div>
+
+      {/* Full-Screen Preview Modal */}
+      {previewWallpaper && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewWallpaper(null)}
+        >
+          {/* Close / Back Button */}
+          <button 
+            onClick={() => setPreviewWallpaper(null)}
+            className="absolute top-6 right-6 z-50 p-3 rounded-full bg-neutral-900/80 text-white border border-neutral-700 hover:bg-red-600 transition-colors shadow-lg"
+          >
+            <X size={24} />
+          </button>
+
+          {/* Modal Container */}
+          <div 
+            className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center justify-center outline-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img 
+              src={previewWallpaper.url} 
+              alt={previewWallpaper.name} 
+              className="max-h-[75vh] w-auto max-w-full object-contain rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)] border border-neutral-800"
+            />
+            
+            {/* Wallpaper Info & Actions bar */}
+            <div className="mt-4 flex flex-wrap items-center justify-between w-full bg-neutral-900/90 border border-neutral-800 p-4 rounded-xl gap-4">
+              <div>
+                <h3 className="text-white font-bold text-lg">{previewWallpaper.name}</h3>
+                <p className="text-xs text-red-500 font-black tracking-wider">{previewWallpaper.wallpaperId} • {previewWallpaper.category}</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-gray-400 text-xs font-bold flex items-center gap-1"><Eye size={14}/> {previewWallpaper.views}</span>
+                <span className="text-gray-400 text-xs font-bold flex items-center gap-1"><Download size={14}/> {previewWallpaper.downloads}</span>
+                <button 
+                  onClick={() => {
+                    window.open(previewWallpaper.url, '_blank');
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2 rounded-lg text-sm transition-all shadow-lg flex items-center gap-2"
+                >
+                  <Download size={16} /> Download Original
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <footer className="text-center py-6 text-gray-500 text-sm mt-auto border-t border-[var(--glass-border)]">
+        © {new Date().getFullYear()} RAWAT SHOP. All rights reserved.
+      </footer>
     </div> 
   );
 }
