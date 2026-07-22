@@ -49,9 +49,7 @@ app.use((err, req, res, next) => {
 // Create Default Admin
 async function createDefaultAdmin() {
     try {
-        const existingAdmin = await Admin.findOne({
-            adminId: "Tarun004"
-        });
+        const existingAdmin = await Admin.findOne();
 
         if (!existingAdmin) {
             await Admin.create({
