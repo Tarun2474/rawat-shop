@@ -20,7 +20,7 @@ export default function AdminUpload() {
 
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
-  const token = localStorage.getItem('adminToken');
+  const token = sessionStorage.getItem('adminToken');
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
