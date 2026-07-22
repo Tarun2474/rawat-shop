@@ -1,72 +1,95 @@
 // backend/server.js
 
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const connectDB = require('./config/db');
-const Admin = require('./models/Admin');
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const connectDB = require("./config/db");
+const Admin = require("./models/Admin");
 
 // Load environment variables
 dotenv.config();
 
-// Initialize express app
+// Initialize Express
 const app = express();
 
-// Connect to MongoDB Atlas
-connectDB();
-
-// Middleware - CORS fix taaki error na aaye
+// Middleware
 app.use(cors({
     origin: true,
     credentials: true
 }));
 
-app.use(express.json()); // To parse JSON data
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Basic Route for testing server
-app.get('/', (req, res) => {
-    res.json({ message: 'RAWAT SHOP V2.0 API is running perfectly!' });
-});
-
-// Import Routes
-const adminRoutes = require('./routes/adminRoutes');
-const wallpaperRoutes = require('./routes/wallpaperRoutes');
-
-// Use Routes (Bina /api ke taaki frontend se match ho jaye)
-app.use('/admin', adminRoutes);
-app.use('/wallpapers', wallpaperRoutes);
-
-// Error Handling Middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({
-        success: false,
-        message: err.message || 'Server Error Occurred'
+// Test Route
+app.get("/", (req, res) => {
+    res.json({
+        message: "RAWAT SHOP V2.0 API is running perfectly!"
     });
 });
 
-// Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running in production-ready mode on port ${PORT}`);
+// Import Routes
+const adminRoutes = require("./routes/adminRoutes");
+const wallpaperRoutes = require("./routes/wallpaperRoutes");
+
+// Use Routes
+app.use("/admin", adminRoutes);
+app.use("/wallpapers", wallpaperRoutes);
+
+// Error Handler
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+
+    res.status(500).json({
+        success: false,
+        message: err.message || "Server Error Occurred"
+    });
 });
 
-// Auto create admin on startup (Bina password hash ke taaki seedha login ho jaye)
+// Create Default Admin
 async function createDefaultAdmin() {
     try {
-        const existingAdmin = await Admin.findOne({ username: "Tarun004" });
+        const existingAdmin = await Admin.findOne({
+            adminId: "Tarun004"
+        });
+
         if (!existingAdmin) {
             await Admin.create({
-                adminId: "1",
-                username: "Tarun004",
+                adminId: "Tarun004",
                 password: "Rawat24004"
             });
-            console.log("Default admin created successfully!");
+
+            console.log("✅ Default Admin Created");
+        } else {
+            console.log("✅ Default Admin Already Exists");
         }
+
     } catch (err) {
-        console.log("Error creating admin:", err);
+        console.error("Error creating admin:", err);
     }
 }
 
-createDefaultAdmin();
+// Start Server
+const startServer = async () => {
+    try {
+
+        // Connect MongoDB
+        await connectDB();
+
+        // Create Default Admin
+        await createDefaultAdmin();
+
+        // Start Express Server
+        const PORT = process.env.PORT || 5000;
+
+        app.listen(PORT, () => {
+            console.log(`🚀 Server running on port ${PORT}`);
+        });
+
+    } catch (err) {
+        console.error("Server Startup Error:", err);
+        process.exit(1);
+    }
+};
+
+startServer();
