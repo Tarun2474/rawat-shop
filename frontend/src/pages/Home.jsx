@@ -166,6 +166,7 @@ export default function Home() {
         <footer className="text-center py-6 text-gray-500 text-sm mt-auto">
   © {new Date().getFullYear()} RAWAT SHOP. All rights reserved.
 </footer>
+</div>
     </div> 
   );
 }
