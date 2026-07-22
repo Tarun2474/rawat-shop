@@ -16,13 +16,15 @@ const authAdmin = async (req, res) => {
     const { adminId, password } = req.body;
 
     // Check if any admin exists in DB. If DB is completely empty, create default admin.
-    const adminCount = await Admin.countDocuments();
-    if (adminCount === 0) {
+    const existingAdmin = await Admin.findOne();
+
+if (!existingAdmin) {
   console.log("No admin found in DB. Creating default admin...");
- await Admin.create({
+
+  await Admin.create({
     adminId: "Tarun004",
     password: "Rawat24004"
-});
+  });
 }
 
     // Find admin
