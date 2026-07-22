@@ -12,7 +12,7 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   // Check if admin is logged in
-  const isAdminLoggedIn = !!localStorage.getItem('adminToken');
+  const isAdminLoggedIn = !!sessionStorage.getItem('adminToken');
 
   return (
     <>
