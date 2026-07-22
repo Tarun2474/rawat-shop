@@ -208,12 +208,25 @@ export default function Home() {
                 <span className="text-gray-400 text-xs font-bold flex items-center gap-1"><Eye size={14}/> {previewWallpaper.views}</span>
                 <span className="text-gray-400 text-xs font-bold flex items-center gap-1"><Download size={14}/> {previewWallpaper.downloads}</span>
                 <button 
-                  onClick={() => {
-                    window.open(previewWallpaper.url, '_blank');
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(previewWallpaper.url);
+                      const blob = await response.blob();
+                      const objectUrl = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = objectUrl;
+                      link.download = `${previewWallpaper.name.replace(/\s+/g, '_')}_RAWAT_SHOP.jpg`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      URL.revokeObjectURL(objectUrl);
+                    } catch (err) {
+                      window.open(previewWallpaper.url, '_blank');
+                    }
                   }}
                   className="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2 rounded-lg text-sm transition-all shadow-lg flex items-center gap-2"
                 >
-                  <Download size={16} /> Download Original
+                  <Download size={16} /> Download Wallpaper
                 </button>
               </div>
             </div>
