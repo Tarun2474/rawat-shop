@@ -19,7 +19,7 @@ import AdminSettings from './pages/AdminSettings';
 
 // Helper component for protecting Admin routes
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('adminToken');
+  const token = sessionStorage.getItem('adminToken');
   if (!token) {
     return <Navigate to="/admin" replace />;
   }
