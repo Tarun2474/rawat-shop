@@ -5,11 +5,13 @@ const dns = require('dns');
 
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 
+mongoose.set("bufferCommands", false);
+
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI, {
-      // Mongoose 6+ automatically handles standard connection options
-      // No need for useNewUrlParser or useUnifiedTopology anymore
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
     });
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
