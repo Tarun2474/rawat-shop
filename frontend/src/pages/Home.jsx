@@ -235,12 +235,16 @@ export default function Home() {
         </div>
       )}
 
-      {/* Footer with Privacy Policy Link */}
+      {/* Footer with Links */}
       <footer className="w-full py-6 px-4 text-center text-gray-500 text-sm mt-auto border-t border-[var(--glass-border)] flex flex-col sm:flex-row items-center justify-center gap-4">
         <span>© {new Date().getFullYear()} RAWAT SHOP. All rights reserved.</span>
         <span className="hidden sm:inline">•</span>
         <Link to="/privacy-policy" className="text-gray-400 hover:text-red-500 font-semibold transition-colors flex items-center gap-1">
           <Shield size={14} /> Privacy Policy
+        </Link>
+        <span className="hidden sm:inline">•</span>
+        <Link to="/contact" className="text-gray-400 hover:text-red-500 font-semibold transition-colors flex items-center gap-1">
+          <MessageSquare size={14} /> Contact Us
         </Link>
       </footer>
     </div> 
