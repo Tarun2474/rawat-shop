@@ -4,13 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 
-// Import Components (Inhe hum next steps me banayenge)
+// Import Components
 import Navbar from './components/Navbar';
 import AdminSidebar from './components/AdminSidebar';
 
-// Import Pages (Inhe bhi hum next steps me banayenge)
+// Import Pages
 import Home from './pages/Home';
 import Stickers from './pages/Stickers';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUpload from './pages/AdminUpload';
@@ -52,6 +53,7 @@ function App() {
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
               <Route path="/stickers" element={<Stickers />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               
               {/* Admin Login Route */}
               <Route path="/admin" element={<AdminLogin />} />
