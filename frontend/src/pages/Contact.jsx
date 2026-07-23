@@ -4,12 +4,23 @@ import React from 'react';
 import { Mail, Instagram, Facebook, MessageSquare, Send } from 'lucide-react';
 
 export default function Contact() {
-  // Yahan par tu apne asli social media links aur email daal dena
+  
+  // 🟢 YAHAN APNI ASLI LINKS DAAL SAKTA HAI 
+  // Agar koi link nahi hai, toh use khali "" chhod dena, phir wo apne aap "Coming Soon" dikhayega.
   const socialLinks = {
-    email: "tarunrawat7906@gmail.com", // Apna email yahan daal le
-    instagram: "https://instagram.com/your_username", // Apna Instagram link
-    facebook: "https://facebook.com/your_username", // Apna Facebook link
-    pinterest: "https://pin.it/1Cwkrt098", // Apna Pinterest link
+    email: "tarunrawat7906@gmail.com", 
+    instagram: "", // Jaise: "https://instagram.com/your_username"
+    facebook: "",  // Jaise: "https://facebook.com/your_username"
+    pinterest: "Yahan apni Pinterest ki link daal de", // Jaise: "https://pin.it/1Cwkrt098"
+  };
+
+  // Click handler: Agar link dali hogi toh khul jayegi, nahi toh alert aayega
+  const handleSocialClick = (platform, url) => {
+    if (url && url.startsWith('http')) {
+      window.open(url, '_blank');
+    } else {
+      alert(`Our ${platform} page is coming soon! Please contact us via Email for now.`);
+    }
   };
 
   return (
@@ -34,7 +45,7 @@ export default function Contact() {
         {/* Email / Gmail Card */}
         <a 
           href={`mailto:${socialLinks.email}?subject=Support%20/%20Inquiry%20-%20RAWAT%20SHOP`}
-          className="glass-card p-6 rounded-2xl border border-[var(--glass-border)] flex items-center gap-5 hover:border-red-500 transition-all group"
+          className="glass-card p-6 rounded-2xl border border-[var(--glass-border)] flex items-center gap-5 hover:border-red-500 transition-all group cursor-pointer"
         >
           <div className="w-14 h-14 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 group-hover:bg-red-600 group-hover:text-white transition-all shadow-md">
             <Mail size={26} />
@@ -46,52 +57,52 @@ export default function Contact() {
         </a>
 
         {/* Instagram Card */}
-        <a 
-          href={socialLinks.instagram} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="glass-card p-6 rounded-2xl border border-[var(--glass-border)] flex items-center gap-5 hover:border-red-500 transition-all group"
+        <div 
+          onClick={() => handleSocialClick('Instagram', socialLinks.instagram)}
+          className="glass-card p-6 rounded-2xl border border-[var(--glass-border)] flex items-center gap-5 hover:border-pink-500 transition-all group cursor-pointer"
         >
           <div className="w-14 h-14 rounded-xl bg-pink-500/10 flex items-center justify-center text-pink-500 group-hover:bg-pink-600 group-hover:text-white transition-all shadow-md">
             <Instagram size={26} />
           </div>
           <div>
             <h3 className="text-lg font-bold text-[var(--text-main)] group-hover:text-pink-500 transition-colors">Instagram</h3>
-            <p className="text-sm text-[var(--text-muted)] font-medium">DM us for quick queries</p>
+            <p className="text-sm text-[var(--text-muted)] font-medium">
+              {socialLinks.instagram ? "Visit Profile" : "Coming Soon"}
+            </p>
           </div>
-        </a>
+        </div>
 
         {/* Facebook Card */}
-        <a 
-          href={socialLinks.facebook} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="glass-card p-6 rounded-2xl border border-[var(--glass-border)] flex items-center gap-5 hover:border-red-500 transition-all group"
+        <div 
+          onClick={() => handleSocialClick('Facebook', socialLinks.facebook)}
+          className="glass-card p-6 rounded-2xl border border-[var(--glass-border)] flex items-center gap-5 hover:border-blue-500 transition-all group cursor-pointer"
         >
           <div className="w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-md">
             <Facebook size={26} />
           </div>
           <div>
             <h3 className="text-lg font-bold text-[var(--text-main)] group-hover:text-blue-500 transition-colors">Facebook</h3>
-            <p className="text-sm text-[var(--text-muted)] font-medium">Connect on our page</p>
+            <p className="text-sm text-[var(--text-muted)] font-medium">
+              {socialLinks.facebook ? "Visit Profile" : "Coming Soon"}
+            </p>
           </div>
-        </a>
+        </div>
 
         {/* Pinterest Card */}
-        <a 
-          href={socialLinks.pinterest} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="glass-card p-6 rounded-2xl border border-[var(--glass-border)] flex items-center gap-5 hover:border-red-500 transition-all group"
+        <div 
+          onClick={() => handleSocialClick('Pinterest', socialLinks.pinterest)}
+          className="glass-card p-6 rounded-2xl border border-[var(--glass-border)] flex items-center gap-5 hover:border-red-600 transition-all group cursor-pointer"
         >
           <div className="w-14 h-14 rounded-xl bg-red-600/10 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-all shadow-md">
-            <Send size={26} />
+            <Send size {26} />
           </div>
           <div>
             <h3 className="text-lg font-bold text-[var(--text-main)] group-hover:text-red-500 transition-colors">Pinterest</h3>
-            <p className="text-sm text-[var(--text-muted)] font-medium">Explore our boards</p>
+            <p className="text-sm text-[var(--text-muted)] font-medium">
+              {socialLinks.pinterest && socialLinks.pinterest !== "Yahan apni Pinterest ki link daal de" ? "Visit Profile" : "Coming Soon"}
+            </p>
           </div>
-        </a>
+        </div>
 
       </div>
 
