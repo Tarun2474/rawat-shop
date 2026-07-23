@@ -94,7 +94,7 @@ export default function Contact() {
           className="glass-card p-6 rounded-2xl border border-[var(--glass-border)] flex items-center gap-5 hover:border-red-600 transition-all group cursor-pointer"
         >
           <div className="w-14 h-14 rounded-xl bg-red-600/10 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-all shadow-md">
-            <Send size {26} />
+            <Send size={26} />
           </div>
           <div>
             <h3 className="text-lg font-bold text-[var(--text-main)] group-hover:text-red-500 transition-colors">Pinterest</h3>
