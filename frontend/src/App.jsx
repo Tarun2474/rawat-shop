@@ -17,6 +17,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminUpload from './pages/AdminUpload';
 import AdminManage from './pages/AdminManage';
 import AdminSettings from './pages/AdminSettings';
+import Contact from './pages/Contact';
 
 // Helper component for protecting Admin routes
 const ProtectedRoute = ({ children }) => {
@@ -82,6 +83,8 @@ function App() {
                   <AdminLayout><AdminSettings /></AdminLayout>
                 </ProtectedRoute>
               } />
+              
+              <Route path="/contact" element={<Contact />} />
               
               {/* Catch all route - Redirects to home */}
               <Route path="*" element={<Navigate to="/" replace />} />
