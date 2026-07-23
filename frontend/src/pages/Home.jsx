@@ -1,7 +1,8 @@
 // frontend/src/pages/Home.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, X, Download, Eye, Heart } from 'lucide-react';
+import { Search, X, Download, Eye, Heart, Shield } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import WallpaperCard from '../components/WallpaperCard';
 
@@ -234,8 +235,13 @@ export default function Home() {
         </div>
       )}
 
-      <footer className="text-center py-6 text-gray-500 text-sm mt-auto border-t border-[var(--glass-border)]">
-        © {new Date().getFullYear()} RAWAT SHOP. All rights reserved.
+      {/* Footer with Privacy Policy Link */}
+      <footer className="w-full py-6 px-4 text-center text-gray-500 text-sm mt-auto border-t border-[var(--glass-border)] flex flex-col sm:flex-row items-center justify-center gap-4">
+        <span>© {new Date().getFullYear()} RAWAT SHOP. All rights reserved.</span>
+        <span className="hidden sm:inline">•</span>
+        <Link to="/privacy-policy" className="text-gray-400 hover:text-red-500 font-semibold transition-colors flex items-center gap-1">
+          <Shield size={14} /> Privacy Policy
+        </Link>
       </footer>
     </div> 
   );
