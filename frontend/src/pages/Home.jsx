@@ -1,7 +1,7 @@
 // frontend/src/pages/Home.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, X, Download, Eye, Heart, Shield } from 'lucide-react';
+import { Search, X, Download, Eye, Heart, Shield, MessageSquare} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import WallpaperCard from '../components/WallpaperCard';
