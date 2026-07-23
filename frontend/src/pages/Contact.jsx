@@ -9,7 +9,7 @@ export default function Contact() {
     email: "tarunrawat7906@gmail.com", // Apna email yahan daal le
     instagram: "https://instagram.com/your_username", // Apna Instagram link
     facebook: "https://facebook.com/your_username", // Apna Facebook link
-    pinterest: "https://pinterest.com/your_username", // Apna Pinterest link
+    pinterest: "https://pin.it/1Cwkrt098", // Apna Pinterest link
   };
 
   return (
