@@ -11,7 +11,7 @@ export default function Contact() {
     email: "tarunrawat7906@gmail.com", 
     instagram: "", // Jaise: "https://instagram.com/your_username"
     facebook: "",  // Jaise: "https://facebook.com/your_username"
-    pinterest: "Yahan apni Pinterest ki link daal de", // Jaise: "https://pin.it/1Cwkrt098"
+    pinterest: "https://pin.it/1Cwkrt098"
   };
 
   // Click handler: Agar link dali hogi toh khul jayegi, nahi toh alert aayega
