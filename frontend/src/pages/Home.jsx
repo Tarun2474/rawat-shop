@@ -1,7 +1,7 @@
 // frontend/src/pages/Home.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, X, Download, Eye, Heart, Shield, MessageSquare} from 'lucide-react';
+import { Search, X, Download, Eye, Heart, Shield, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import WallpaperCard from '../components/WallpaperCard';
@@ -9,12 +9,17 @@ import WallpaperCard from '../components/WallpaperCard';
 const MAIN_CATEGORIES = ['Latest', 'Premium', 'Mobile Wallpapers', 'Laptop Wallpapers', 'Tablet Wallpapers'];
 const SUB_CATEGORIES = ['Gaming', 'Anime', 'Nature', 'Cars', 'Bikes', 'Technology', 'Superheroes', 'Marvel', 'DC', 'Movies', 'Space', 'Abstract', 'Dark', 'AMOLED', 'Minimal', 'Sports', 'Fantasy', 'Sci-Fi'];
 
+const ITEMS_PER_PAGE = 15; // 3 columns × 5 rows = 15 wallpapers per page
+
 export default function Home() {
   const [wallpapers, setWallpapers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeMainCat, setActiveMainCat] = useState('Latest');
   const [activeSubCat, setActiveSubCat] = useState('All');
   const [loading, setLoading] = useState(true);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
 
   // State for Full-Screen Preview Modal
   const [previewWallpaper, setPreviewWallpaper] = useState(null);
@@ -37,6 +42,11 @@ export default function Home() {
     };
     fetchWallpapers();
   }, [API_URL]);
+
+  // Reset to page 1 whenever search query or categories change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeMainCat, activeSubCat]);
 
   // Update stats locally in state when user clicks view/like/download
   const handleUpdateStats = (id, action) => {
@@ -63,6 +73,14 @@ export default function Home() {
       return matchesSearch && matchesMain && matchesSub;
     });
   }, [wallpapers, searchQuery, activeMainCat, activeSubCat]);
+
+  // Pagination Logic: Slice wallpapers for the current page
+  const totalPages = Math.ceil(filteredWallpapers.length / ITEMS_PER_PAGE);
+  
+  const currentWallpapers = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredWallpapers.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredWallpapers, currentPage]);
 
   return (
     <div className="w-full flex-1 flex flex-col relative">
@@ -147,22 +165,61 @@ export default function Home() {
           ))}
         </div>
 
-        {/* 3-Column Desktop Grid / 1-Col Mobile */}
+        {/* 3-Column Desktop Grid / 15 Wallpapers per page */}
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-red-600"></div>
           </div>
-        ) : filteredWallpapers.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredWallpapers.map((wp) => (
-              <WallpaperCard 
-                key={wp._id} 
-                wallpaper={wp} 
-                onUpdateStats={handleUpdateStats} 
-                onPreview={() => setPreviewWallpaper(wp)}
-              />
-            ))}
-          </div>
+        ) : currentWallpapers.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {currentWallpapers.map((wp) => (
+                <WallpaperCard 
+                  key={wp._id} 
+                  wallpaper={wp} 
+                  onUpdateStats={handleUpdateStats} 
+                  onPreview={() => setPreviewWallpaper(wp)}
+                />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-3 mt-12">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-xl glass border border-[var(--glass-border)] text-[var(--text-main)] font-bold flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:border-red-500 transition-all cursor-pointer"
+                >
+                  <ChevronLeft size={18} /> Prev
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(num => (
+                    <button
+                      key={num}
+                      onClick={() => setCurrentPage(num)}
+                      className={`w-10 h-10 rounded-xl font-bold transition-all cursor-pointer ${
+                        currentPage === num
+                          ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)] border border-red-600'
+                          : 'glass text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--glass-border)]'
+                      }`}
+                    >
+                      {num}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 rounded-xl glass border border-[var(--glass-border)] text-[var(--text-main)] font-bold flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:border-red-500 transition-all cursor-pointer"
+                >
+                  Next <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-20 glass-card rounded-2xl border-dashed border-2 border-[var(--glass-border)]">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full theme-input mb-4 shadow-lg">
@@ -183,7 +240,7 @@ export default function Home() {
           {/* Close / Back Button */}
           <button 
             onClick={() => setPreviewWallpaper(null)}
-            className="absolute top-6 right-6 z-50 p-3 rounded-full bg-neutral-900/80 text-white border border-neutral-700 hover:bg-red-600 transition-colors shadow-lg"
+            className="absolute top-6 right-6 z-50 p-3 rounded-full bg-neutral-900/80 text-white border border-neutral-700 hover:bg-red-600 transition-colors shadow-lg cursor-pointer"
           >
             <X size={24} />
           </button>
@@ -225,7 +282,7 @@ export default function Home() {
                       window.open(previewWallpaper.url, '_blank');
                     }
                   }}
-                  className="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2 rounded-lg text-sm transition-all shadow-lg flex items-center gap-2"
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2 rounded-lg text-sm transition-all shadow-lg flex items-center gap-2 cursor-pointer"
                 >
                   <Download size={16} /> Download Wallpaper
                 </button>
