@@ -1,7 +1,7 @@
 // frontend/src/pages/Home.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, X, Download, Eye, Heart, Shield, MessageSquare, ChevronLeft, ChevronRight, Sparkles, Flame } from 'lucide-react';
+import { Search, X, Download, Eye, Heart, Shield, MessageSquare, ChevronLeft, ChevronRight, Sparkles, Flame, Zap, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import WallpaperCard from '../components/WallpaperCard';
@@ -235,32 +235,66 @@ export default function Home() {
           </div>
         )}
 
-        {/* 🌟 NEW: Interesting Bottom Content Section for Users & SEO */}
-        <div className="mt-16 glass-card rounded-2xl p-6 md:p-8 border border-[var(--glass-border)] relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2.5 rounded-xl bg-red-600/20 text-red-500 border border-red-500/30">
-              <Sparkles size={22} />
+        {/* 🌟 DECORATED GAMING/SEO INFO SECTION */}
+        <div className="mt-16 relative rounded-3xl p-6 md:p-10 glass-card border border-red-500/30 overflow-hidden shadow-[0_0_30px_rgba(220,38,38,0.15)]">
+          {/* Background Glow & Pattern */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-red-600/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-72 h-72 bg-red-900/10 rounded-full blur-3xl pointer-events-none"></div>
+
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-6 border-b border-[var(--glass-border)]">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-red-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.6)]">
+                  <Flame size={26} />
+                </div>
+                <div>
+                  <h3 className="text-2xl md:text-3xl font-black text-[var(--text-main)] brand-font tracking-tight">
+                    LEVEL UP YOUR <span className="text-red-500">SCREEN VIBE</span>
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-widest mt-0.5">
+                    Exclusive 3D Gaming & Anime Wallpapers Hub
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl glass border border-red-500/40 text-red-500 font-black text-xs uppercase tracking-wider">
+                <Zap size={16} /> 100% Original Quality
+              </div>
             </div>
-            <h3 className="text-xl md:text-2xl font-black text-[var(--text-main)] tracking-tight brand-font">
-              About <span className="text-red-500">RAWAT SHOP</span> — Ultimate 3D Gaming & Anime Wallpapers
-            </h3>
-          </div>
-          <p className="text-[var(--text-muted)] text-sm md:text-base leading-relaxed font-semibold mb-4">
-            Welcome to <strong className="text-[var(--text-main)]">RAWAT SHOP</strong>, your ultimate destination for high-definition 3D gaming, anime, supercars, and aesthetic wallpapers. We curate zero-compression, original-quality visuals tailored specifically for mobile phones, laptops, and tablets.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs md:text-sm text-[var(--text-muted)] font-bold">
-            <div className="glass p-4 rounded-xl border border-[var(--glass-border)]">
-              <span className="text-red-500 font-black block mb-1">🔥 Zero Compression</span>
-              Every wallpaper is kept in its original pristine quality so your device display looks razor-sharp.
-            </div>
-            <div className="glass p-4 rounded-xl border border-[var(--glass-border)]">
-              <span className="text-red-500 font-black block mb-1">⚡ Trending Collections</span>
-              From Valorant and GTA V to Solo Leveling and Cafe Racer bikes, find what matches your exact vibe.
-            </div>
-            <div className="glass p-4 rounded-xl border border-[var(--glass-border)]">
-              <span className="text-red-500 font-black block mb-1">📱 Multi-Device Support</span>
-              Optimized seamlessly for smartphones, tablets, and high-end gaming laptops.
+
+            <p className="text-[var(--text-muted)] text-sm md:text-base leading-relaxed font-semibold mb-8">
+              Welcome to <strong className="text-[var(--text-main)]">RAWAT SHOP</strong> — the ultimate digital sanctuary for gamers, anime fans, and aesthetic riders. We hand-craft and curate zero-compression, razor-sharp visual masterpieces designed specifically to pop on high-refresh-rate mobile displays, tablet screens, and gaming desktop monitors.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="glass p-5 rounded-2xl border border-[var(--glass-border)] hover:border-red-500/50 transition-all group">
+                <div className="w-10 h-10 rounded-xl bg-red-600/10 text-red-500 flex items-center justify-center font-black mb-3 group-hover:scale-110 transition-transform">
+                  <Sparkles size={20} />
+                </div>
+                <h4 className="text-[var(--text-main)] font-black text-base mb-1">Zero Compression HD</h4>
+                <p className="text-[var(--text-muted)] text-xs leading-relaxed font-medium">
+                  Every wallpaper retains its pristine pixels, deep blacks, and vibrant neon glows without losing clarity.
+                </p>
+              </div>
+
+              <div className="glass p-5 rounded-2xl border border-[var(--glass-border)] hover:border-red-500/50 transition-all group">
+                <div className="w-10 h-10 rounded-xl bg-red-600/10 text-red-500 flex items-center justify-center font-black mb-3 group-hover:scale-110 transition-transform">
+                  <Flame size={20} />
+                </div>
+                <h4 className="text-[var(--text-main)] font-black text-base mb-1">Trending Universes</h4>
+                <p className="text-[var(--text-muted)] text-xs leading-relaxed font-medium">
+                  Explore top-tier collections from Valorant, GTA V, Solo Leveling, Cyberpunk, and aggressive Cafe Racers.
+                </p>
+              </div>
+
+              <div className="glass p-5 rounded-2xl border border-[var(--glass-border)] hover:border-red-500/50 transition-all group">
+                <div className="w-10 h-10 rounded-xl bg-red-600/10 text-red-500 flex items-center justify-center font-black mb-3 group-hover:scale-110 transition-transform">
+                  <ShieldCheck size={20} />
+                </div>
+                <h4 className="text-[var(--text-main)] font-black text-base mb-1">Instant Direct DL</h4>
+                <p className="text-[var(--text-muted)] text-xs leading-relaxed font-medium">
+                  One-tap full HD downloads straight to your device gallery with zero redirects or annoying ads.
+                </p>
+              </div>
             </div>
           </div>
         </div>
