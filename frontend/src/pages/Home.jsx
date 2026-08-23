@@ -1,13 +1,18 @@
 // frontend/src/pages/Home.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, X, Download, Eye, Heart, Shield, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, X, Download, Eye, Heart, Shield, MessageSquare, ChevronLeft, ChevronRight, Sparkles, Flame } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import WallpaperCard from '../components/WallpaperCard';
 
 const MAIN_CATEGORIES = ['Latest', 'Premium', 'Mobile Wallpapers', 'Laptop Wallpapers', 'Tablet Wallpapers'];
-const SUB_CATEGORIES = ['Gaming', 'Anime', 'Nature', 'Cars', 'Bikes', 'Technology', 'Superheroes', 'Marvel', 'DC', 'Movies', 'Space', 'Abstract', 'Dark', 'AMOLED', 'Minimal', 'Sports', 'Fantasy', 'Sci-Fi'];
+const SUB_CATEGORIES = [
+  'Gaming', 'Valorant', 'GTA V', 'Cyberpunk', 'God of War', 
+  'Anime', 'Solo Leveling', 'Naruto', 'Jujutsu Kaisen', 'Demon Slayer', 
+  'Bikes', 'Cafe Racer', 'Supercars', 'Cars', 
+  'Dark', 'AMOLED', 'Neon', 'Sci-Fi', 'Superheroes', 'Marvel', 'DC', 'Minimal', 'Abstract'
+];
 
 const ITEMS_PER_PAGE = 15; // 3 columns × 5 rows = 15 wallpapers per page
 
@@ -69,7 +74,7 @@ export default function Home() {
       const q = searchQuery.toLowerCase();
       const matchesSearch = w.name.toLowerCase().includes(q) || w.wallpaperId.toLowerCase().includes(q) || w.category.toLowerCase().includes(q);
       const matchesMain = activeMainCat === 'Latest' || w.mainCategory === activeMainCat;
-      const matchesSub = activeSubCat === 'All' || w.category === activeSubCat;
+      const matchesSub = activeSubCat === 'All' || w.category.toLowerCase() === activeSubCat.toLowerCase();
       return matchesSearch && matchesMain && matchesSub;
     });
   }, [wallpapers, searchQuery, activeMainCat, activeSubCat]);
@@ -119,7 +124,7 @@ export default function Home() {
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-[1600px] mx-auto w-full px-4 md:px-8 py-10 flex-1">
+      <div className="max-w-[1600px] mx-auto w-full px-2 sm:px-4 md:px-8 py-10 flex-1">
         
         {/* Main Categories */}
         <div className="flex gap-4 overflow-x-auto pb-4 mb-4 scrollbar-hide snap-x border-b border-[var(--glass-border)]">
@@ -148,7 +153,7 @@ export default function Home() {
                 : 'theme-input hover:border-red-500/50 hover:text-red-500'
             }`}
           >
-            All Sub-Categories
+            All Categories
           </button>
           {SUB_CATEGORIES.map(cat => (
             <button 
@@ -165,7 +170,7 @@ export default function Home() {
           ))}
         </div>
 
-        {/* 3-Column Desktop Grid / 15 Wallpapers per page */}
+        {/* 3-Column Grid for Mobile, Tablet & Desktop / 15 Wallpapers per page */}
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-red-600"></div>
@@ -185,13 +190,13 @@ export default function Home() {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-3 mt-12">
+              <div className="flex items-center justify-center gap-2 sm:gap-3 mt-12">
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 rounded-xl glass border border-[var(--glass-border)] text-[var(--text-main)] font-bold flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:border-red-500 transition-all cursor-pointer"
+                  className="px-3 sm:px-4 py-2 rounded-xl glass border border-[var(--glass-border)] text-[var(--text-main)] font-bold flex items-center gap-1 sm:gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:border-red-500 transition-all cursor-pointer text-xs sm:text-sm"
                 >
-                  <ChevronLeft size={18} /> Prev
+                  <ChevronLeft size={16} /> Prev
                 </button>
 
                 <div className="flex items-center gap-1">
@@ -199,7 +204,7 @@ export default function Home() {
                     <button
                       key={num}
                       onClick={() => setCurrentPage(num)}
-                      className={`w-10 h-10 rounded-xl font-bold transition-all cursor-pointer ${
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl font-bold transition-all cursor-pointer text-xs sm:text-sm ${
                         currentPage === num
                           ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)] border border-red-600'
                           : 'glass text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--glass-border)]'
@@ -213,9 +218,9 @@ export default function Home() {
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 rounded-xl glass border border-[var(--glass-border)] text-[var(--text-main)] font-bold flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:border-red-500 transition-all cursor-pointer"
+                  className="px-3 sm:px-4 py-2 rounded-xl glass border border-[var(--glass-border)] text-[var(--text-main)] font-bold flex items-center gap-1 sm:gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:border-red-500 transition-all cursor-pointer text-xs sm:text-sm"
                 >
-                  Next <ChevronRight size={18} />
+                  Next <ChevronRight size={16} />
                 </button>
               </div>
             )}
@@ -229,6 +234,37 @@ export default function Home() {
             <p className="text-[var(--text-muted)] font-bold">Try adjusting your search query or category filters.</p>
           </div>
         )}
+
+        {/* 🌟 NEW: Interesting Bottom Content Section for Users & SEO */}
+        <div className="mt-16 glass-card rounded-2xl p-6 md:p-8 border border-[var(--glass-border)] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 rounded-xl bg-red-600/20 text-red-500 border border-red-500/30">
+              <Sparkles size={22} />
+            </div>
+            <h3 className="text-xl md:text-2xl font-black text-[var(--text-main)] tracking-tight brand-font">
+              About <span className="text-red-500">RAWAT SHOP</span> — Ultimate 3D Gaming & Anime Wallpapers
+            </h3>
+          </div>
+          <p className="text-[var(--text-muted)] text-sm md:text-base leading-relaxed font-semibold mb-4">
+            Welcome to <strong className="text-[var(--text-main)]">RAWAT SHOP</strong>, your ultimate destination for high-definition 3D gaming, anime, supercars, and aesthetic wallpapers. We curate zero-compression, original-quality visuals tailored specifically for mobile phones, laptops, and tablets.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs md:text-sm text-[var(--text-muted)] font-bold">
+            <div className="glass p-4 rounded-xl border border-[var(--glass-border)]">
+              <span className="text-red-500 font-black block mb-1">🔥 Zero Compression</span>
+              Every wallpaper is kept in its original pristine quality so your device display looks razor-sharp.
+            </div>
+            <div className="glass p-4 rounded-xl border border-[var(--glass-border)]">
+              <span className="text-red-500 font-black block mb-1">⚡ Trending Collections</span>
+              From Valorant and GTA V to Solo Leveling and Cafe Racer bikes, find what matches your exact vibe.
+            </div>
+            <div className="glass p-4 rounded-xl border border-[var(--glass-border)]">
+              <span className="text-red-500 font-black block mb-1">📱 Multi-Device Support</span>
+              Optimized seamlessly for smartphones, tablets, and high-end gaming laptops.
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* Full-Screen Preview Modal */}
