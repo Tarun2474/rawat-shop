@@ -20,6 +20,12 @@ export default function WallpaperCard({ wallpaper, onUpdateStats, onPreview }) {
     }
   };
 
+  // View count ab sirf click par badhega
+  const handleCardClick = () => {
+    recordAction('view');
+    if (onPreview) onPreview();
+  };
+
   const handleDownload = async (e) => {
     e.stopPropagation();
     recordAction('download');
@@ -61,16 +67,13 @@ export default function WallpaperCard({ wallpaper, onUpdateStats, onPreview }) {
   return (
     <div 
       className="card-container cursor-pointer" 
-      onClick={onPreview}
-      onMouseEnter={() => {
-        setIsHovered(true);
-        recordAction('view');
-      }} 
+      onClick={handleCardClick}
+      onMouseEnter={() => setIsHovered(true)} 
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="card-3d relative rounded-xl overflow-hidden glass-card border border-[var(--glass-border)] aspect-[3/4] sm:aspect-[4/5] flex flex-col group shadow-md">
         
-        {/* Image Area - Ab zyaada jagah lega */}
+        {/* Image Area */}
         <div className="flex-1 relative overflow-hidden bg-black min-h-[140px]">
           <img 
             src={wallpaper.url} 
@@ -95,7 +98,7 @@ export default function WallpaperCard({ wallpaper, onUpdateStats, onPreview }) {
           </div>
         </div>
 
-        {/* Bottom Details Area - Compact aur optimized taaki naam poora dikhe */}
+        {/* Bottom Details Area */}
         <div className="p-3 sm:p-4 glass border-t border-[var(--glass-border)] z-10 relative flex flex-col justify-between">
           <div>
             <h3 className="text-sm sm:text-base font-bold text-[var(--text-main)] line-clamp-1 mb-1" title={wallpaper.name}>
