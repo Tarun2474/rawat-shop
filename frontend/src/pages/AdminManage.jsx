@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminManage.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Search, Edit, Trash2, Eye, Download, Heart, XCircle } from 'lucide-react';
+import { Search, Edit, Trash2, Eye, Download, Heart, XCircle, CheckSquare, Square } from 'lucide-react';
 import axios from 'axios';
 
 const MAIN_CATEGORIES = ['Latest', 'Premium', 'Mobile Wallpapers', 'Laptop Wallpapers', 'Tablet Wallpapers'];
@@ -44,6 +44,18 @@ export default function AdminManage() {
     }
   };
 
+  // Toggle category handler inside Edit Modal
+  const toggleEditMainCategory = (cat) => {
+    let currentCats = Array.isArray(editingWp.mainCategory) ? editingWp.mainCategory : [editingWp.mainCategory];
+    if (currentCats.includes(cat)) {
+      if (currentCats.length > 1) {
+        setEditingWp({ ...editingWp, mainCategory: currentCats.filter(c => c !== cat) });
+      }
+    } else {
+      setEditingWp({ ...editingWp, mainCategory: [...currentCats, cat] });
+    }
+  };
+
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     try {
@@ -74,30 +86,51 @@ export default function AdminManage() {
       {/* EDIT MODAL */}
       {editingWp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="glass-card w-full max-w-lg rounded-2xl p-6 border border-red-500/50 shadow-[0_0_40px_rgba(220,38,38,0.3)] animate-in zoom-in-95">
+          <div className="glass-card w-full max-w-lg rounded-2xl p-6 border border-red-500/50 shadow-[0_0_40px_rgba(220,38,38,0.3)] animate-in zoom-in-95 max-h-[90vh] overflow-y-auto custom-scrollbar">
              <div className="flex justify-between items-center mb-6">
                <h3 className="text-2xl font-black brand-font text-[var(--text-main)]">EDIT <span className="text-red-500">{editingWp.wallpaperId}</span></h3>
-               <button onClick={() => setEditingWp(null)} className="text-[var(--text-muted)] hover:text-red-500"><XCircle size={28}/></button>
+               <button onClick={() => setEditingWp(null)} className="text-[var(--text-muted)] hover:text-red-500 cursor-pointer"><XCircle size={28}/></button>
              </div>
              <form onSubmit={handleSaveEdit} className="space-y-4">
                 <div>
                   <label className="text-xs font-black text-[var(--text-muted)] uppercase">Name</label>
                   <input type="text" value={editingWp.name} onChange={e => setEditingWp({...editingWp, name: e.target.value})} className="w-full theme-input rounded-lg p-3 font-bold mt-1" required />
                 </div>
+                
+                {/* Multi-Select Checkboxes for Main Categories */}
                 <div>
-                  <label className="text-xs font-black text-[var(--text-muted)] uppercase">Main Category</label>
-                  <select value={editingWp.mainCategory} onChange={e => setEditingWp({...editingWp, mainCategory: e.target.value})} className="w-full theme-input rounded-lg p-3 font-bold mt-1">
-                    {MAIN_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <label className="text-xs font-black text-[var(--text-muted)] uppercase mb-2 block">Main Categories (Select Multiple)</label>
+                  <div className="grid grid-cols-2 gap-2 glass p-3 rounded-xl border border-[var(--glass-border)] max-h-40 overflow-y-auto">
+                    {MAIN_CATEGORIES.map(c => {
+                      const currentCats = Array.isArray(editingWp.mainCategory) ? editingWp.mainCategory : [editingWp.mainCategory];
+                      const isSelected = currentCats.includes(c);
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => toggleEditMainCategory(c)}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all text-left cursor-pointer ${
+                            isSelected 
+                              ? 'bg-red-600 text-white shadow-sm' 
+                              : 'theme-input text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                          }`}
+                        >
+                          {isSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+                          <span className="truncate">{c}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+
                 <div>
                   <label className="text-xs font-black text-[var(--text-muted)] uppercase">Sub Category</label>
-                  <select value={editingWp.category} onChange={e => setEditingWp({...editingWp, category: e.target.value})} className="w-full theme-input rounded-lg p-3 font-bold mt-1">
+                  <select value={editingWp.category} onChange={e => setEditingWp({...editingWp, category: e.target.value})} className="w-full theme-input rounded-lg p-3 font-bold mt-1 cursor-pointer">
                     {SUB_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 
-                <button type="submit" className="w-full bg-red-600 text-white font-black py-4 rounded-lg mt-6 uppercase tracking-widest hover:bg-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)]">
+                <button type="submit" className="w-full bg-red-600 text-white font-black py-4 rounded-lg mt-6 uppercase tracking-widest hover:bg-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)] cursor-pointer">
                   Save Changes to Database
                 </button>
              </form>
@@ -143,9 +176,14 @@ export default function AdminManage() {
                     <div className="flex flex-col gap-1">
                       <span className="font-black text-sm text-[var(--text-main)]">{wp.name}</span>
                       <span className="text-red-500 font-black brand-font text-xs tracking-wider">{wp.wallpaperId}</span>
-                      <div className="flex gap-2 mt-1">
-                        <span className="text-[10px] theme-input px-2 py-0.5 rounded uppercase font-bold border border-[var(--glass-border)] text-[var(--text-main)]">{wp.mainCategory}</span>
-                        <span className="text-[10px] theme-input px-2 py-0.5 rounded uppercase font-bold border border-[var(--glass-border)] text-[var(--text-main)]">{wp.category}</span>
+                      <div className="flex gap-2 mt-1 flex-wrap max-w-xs">
+                        {/* Render multiple categories safely */}
+                        {Array.isArray(wp.mainCategory) ? wp.mainCategory.map(cat => (
+                          <span key={cat} className="text-[10px] theme-input px-2 py-0.5 rounded uppercase font-bold border border-[var(--glass-border)] text-[var(--text-main)]">{cat}</span>
+                        )) : (
+                          <span className="text-[10px] theme-input px-2 py-0.5 rounded uppercase font-bold border border-[var(--glass-border)] text-[var(--text-main)]">{wp.mainCategory}</span>
+                        )}
+                        <span className="text-[10px] theme-input px-2 py-0.5 rounded uppercase font-bold border border-[var(--glass-border)] bg-red-600/10 text-red-500">{wp.category}</span>
                       </div>
                     </div>
                   </td>
@@ -161,10 +199,10 @@ export default function AdminManage() {
                   </td>
                   <td className="p-5 text-right">
                     <div className="flex items-center justify-end gap-3">
-                      <button onClick={() => setEditingWp(wp)} className="p-2.5 theme-input hover:bg-blue-600 hover:text-white text-[var(--text-main)] rounded-lg transition-colors border border-[var(--glass-border)]" title="Edit">
+                      <button onClick={() => setEditingWp(wp)} className="p-2.5 theme-input hover:bg-blue-600 hover:text-white text-[var(--text-main)] rounded-lg transition-colors border border-[var(--glass-border)] cursor-pointer" title="Edit">
                         <Edit size={18} />
                       </button>
-                      <button onClick={() => handleDelete(wp._id, wp.name)} className="p-2.5 theme-input hover:bg-red-600 hover:text-white text-[var(--text-main)] rounded-lg transition-colors border border-[var(--glass-border)] shadow-none hover:shadow-[0_0_15px_rgba(220,38,38,0.6)]" title="Delete">
+                      <button onClick={() => handleDelete(wp._id, wp.name)} className="p-2.5 theme-input hover:bg-red-600 hover:text-white text-[var(--text-main)] rounded-lg transition-colors border border-[var(--glass-border)] shadow-none hover:shadow-[0_0_15px_rgba(220,38,38,0.6)] cursor-pointer" title="Delete">
                         <Trash2 size={18} />
                       </button>
                     </div>
