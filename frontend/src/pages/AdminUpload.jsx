@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminUpload.jsx
 
 import React, { useState } from 'react';
-import { UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, CheckSquare, Square } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,12 +10,14 @@ const SUB_CATEGORIES = ['Gaming', 'Anime', 'Nature', 'Cars', 'Bikes', 'Technolog
 
 export default function AdminUpload() {
   const [name, setName] = useState('');
-  const [mainCategory, setMainCategory] = useState(MAIN_CATEGORIES[0]);
+  // Multi-select categories ke liye array state (By default 'Latest' select rahega)
+  const [selectedMainCategories, setSelectedMainCategories] = useState(['Latest']);
   const [category, setCategory] = useState(SUB_CATEGORIES[0]);
   const [resolution, setResolution] = useState('Original 4K');
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0); // Live Percentage State
   const [error, setError] = useState('');
 
   const navigate = useNavigate();
@@ -27,8 +29,20 @@ export default function AdminUpload() {
     if (file) {
       setImageFile(file);
       setPreview(URL.createObjectURL(file));
-      // Auto-fill name based on filename if empty
       if (!name) setName(file.name.split('.')[0].replace(/[-_]/g, ' '));
+    }
+  };
+
+  // Checkbox toggle handler for multiple main categories
+  const toggleMainCategory = (cat) => {
+    if (selectedMainCategories.includes(cat)) {
+      // Agar pehle se selected hai aur kam se kam ek bacha hai toh hata do
+      if (selectedMainCategories.length > 1) {
+        setSelectedMainCategories(selectedMainCategories.filter(c => c !== cat));
+      }
+    } else {
+      // Naya add kar do
+      setSelectedMainCategories([...selectedMainCategories, cat]);
     }
   };
 
@@ -40,12 +54,13 @@ export default function AdminUpload() {
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
     setError('');
 
-    // FormData is required for sending files
     const formData = new FormData();
     formData.append('name', name);
-    formData.append('mainCategory', mainCategory);
+    // Saari selected categories ko comma-separated ya JSON string bhej rahe hain
+    formData.append('mainCategory', JSON.stringify(selectedMainCategories));
     formData.append('category', category);
     formData.append('resolution', resolution);
     formData.append('image', imageFile);
@@ -55,6 +70,10 @@ export default function AdminUpload() {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted); // Live progress update
         }
       });
 
@@ -117,12 +136,29 @@ export default function AdminUpload() {
                   placeholder="e.g. Cyberpunk City Night" />
               </div>
 
+              {/* Multiple Main Categories (Checkboxes) */}
               <div>
-                <label className="block text-[var(--text-muted)] text-xs font-black uppercase tracking-wider mb-2">Main Category (Menu)</label>
-                <select value={mainCategory} onChange={e => setMainCategory(e.target.value)}
-                  className="w-full theme-input rounded-xl py-3.5 px-4 focus:outline-none focus:border-red-500 transition-all font-bold appearance-none">
-                  {MAIN_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                <label className="block text-[var(--text-muted)] text-xs font-black uppercase tracking-wider mb-2">Main Categories (Select Multiple)</label>
+                <div className="grid grid-cols-2 gap-2 glass p-3 rounded-xl border border-[var(--glass-border)] max-h-40 overflow-y-auto">
+                  {MAIN_CATEGORIES.map(c => {
+                    const isSelected = selectedMainCategories.includes(c);
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => toggleMainCategory(c)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all text-left cursor-pointer ${
+                          isSelected 
+                            ? 'bg-red-600 text-white shadow-sm' 
+                            : 'theme-input text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                        }`}
+                      >
+                        {isSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+                        <span className="truncate">{c}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div>
@@ -142,10 +178,24 @@ export default function AdminUpload() {
             </div>
           </div>
 
-          <button type="submit" disabled={isUploading || !imageFile}
-            className="w-full py-4.5 rounded-xl font-black uppercase tracking-widest transition-all mt-8 brand-font text-lg flex justify-center items-center gap-3 bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)] hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed">
-            <UploadCloud size={24} /> {isUploading ? 'UPLOADING TO CLOUD & DB...' : 'PUBLISH WALLPAPER'}
-          </button>
+          {/* Upload Button with Live Progress Animation & Percentage */}
+          <div className="space-y-2">
+            <button type="submit" disabled={isUploading || !imageFile}
+              className="w-full py-4.5 rounded-xl font-black uppercase tracking-widest transition-all mt-4 brand-font text-lg flex justify-center items-center gap-3 bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)] hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+              <UploadCloud size={24} /> 
+              {isUploading ? `UPLOADING... ${uploadProgress}%` : 'PUBLISH WALLPAPER'}
+            </button>
+
+            {/* Live Progress Bar Animation */}
+            {isUploading && (
+              <div className="w-full bg-neutral-800 rounded-full h-2.5 overflow-hidden border border-neutral-700">
+                <div 
+                  className="bg-red-600 h-2.5 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(220,38,38,0.8)]" 
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+            )}
+          </div>
         </form>
       </div>
     </div>
