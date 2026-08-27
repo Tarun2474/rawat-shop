@@ -14,7 +14,7 @@ const wallpaperSchema = new mongoose.Schema({
     trim: true
   },
   mainCategory: {
-    type: String,
+    type: [String],
     required: true
   },
   category: {
