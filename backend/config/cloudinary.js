@@ -24,6 +24,10 @@ const storage = new CloudinaryStorage({
   },
 });
 
-const upload = multer({ storage: storage });
+// Multer config with 20MB file size limit for large 4K/8K wallpapers
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 20 * 1024 * 1024 } // 20 MB limit
+});
 
 module.exports = { cloudinary, upload };
