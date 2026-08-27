@@ -23,8 +23,17 @@ const createWallpaper = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No image file uploaded' });
     }
 
-    const { name, mainCategory, category, resolution } = req.body;
+    let { name, mainCategory, category, resolution } = req.body;
     
+    // Parse mainCategory if it comes as a JSON string from FormData
+    if (typeof mainCategory === 'string') {
+      try {
+        mainCategory = JSON.parse(mainCategory);
+      } catch (err) {
+        mainCategory = [mainCategory];
+      }
+    }
+
     // Auto Generate ID
     const nextId = await generateWallpaperId();
 
@@ -66,12 +75,20 @@ const getWallpapers = async (req, res) => {
 // @access  Private
 const updateWallpaper = async (req, res) => {
   try {
-    const { name, mainCategory, category } = req.body;
+    let { name, mainCategory, category } = req.body;
     
     const wallpaper = await Wallpaper.findById(req.params.id);
 
     if (!wallpaper) {
       return res.status(404).json({ success: false, message: 'Wallpaper not found' });
+    }
+
+    if (typeof mainCategory === 'string') {
+      try {
+        mainCategory = JSON.parse(mainCategory);
+      } catch (err) {
+        // keep as is or wrap
+      }
     }
 
     wallpaper.name = name || wallpaper.name;
