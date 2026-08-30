@@ -1,23 +1,46 @@
 // backend/config/db.js
 
-const mongoose = require('mongoose');
-const dns = require('dns');
+const mongoose = require("mongoose");
 
-dns.setServers(['8.8.8.8', '1.1.1.1']);
-
-mongoose.set("bufferCommands", false);
+let connectionPromise = null;
 
 const connectDB = async () => {
+  // Already connected
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  // Connection already in progress
+  if (mongoose.connection.readyState === 2 && connectionPromise) {
+    await connectionPromise;
+    return mongoose.connection;
+  }
+
+  if (!process.env.MONGO_URI) {
+    throw new Error("MONGO_URI is not defined in environment variables");
+  }
+
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
+    connectionPromise = mongoose.connect(process.env.MONGO_URI, {
       serverSelectionTimeoutMS: 30000,
       socketTimeoutMS: 45000,
     });
 
+    const conn = await connectionPromise;
+
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+
+    return conn;
   } catch (error) {
     console.error(`MongoDB Connection Error: ${error.message}`);
-    process.exit(1); // Exit with failure
+
+    // Reset the promise so a later serverless invocation
+    // can try connecting again.
+    connectionPromise = null;
+
+    // IMPORTANT:
+    // Do not use process.exit() on Vercel.
+    throw error;
   }
 };
 
