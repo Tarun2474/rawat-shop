@@ -1,13 +1,16 @@
 // frontend/src/components/WallpaperCard.jsx
 
 import React, { useState } from 'react';
-import { Eye, Download, Heart, Star, Share2 } from 'lucide-react';
+import { Eye, Download, Heart, Star, Share2, Copy, Send, Check } from 'lucide-react';
 import axios from 'axios';
 
 export default function WallpaperCard({ wallpaper, onUpdateStats, onPreview }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isFav, setIsFav] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   const API_URL = import.meta.env.VITE_API_URL;
 
   // Calls backend to increment stats
@@ -20,7 +23,6 @@ export default function WallpaperCard({ wallpaper, onUpdateStats, onPreview }) {
     }
   };
 
-  // View count ab sirf click par badhega
   const handleCardClick = () => {
     recordAction('view');
     if (onPreview) onPreview();
@@ -58,22 +60,51 @@ export default function WallpaperCard({ wallpaper, onUpdateStats, onPreview }) {
     if (!isFav) recordAction('fav');
   };
 
-  const handleShare = (e) => {
+  // Toggle Share Menu
+  const handleShareClick = (e) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(window.location.href);
-    alert('Link copied to clipboard!');
+    setShowShareMenu(!showShareMenu);
+  };
+
+  // Copy Link Function
+  const handleCopyLink = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(wallpaper.url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    setShowShareMenu(false);
+  };
+
+  // Share to Social Platforms
+  const handleSocialShare = (platform, e) => {
+    e.stopPropagation();
+    const shareUrl = wallpaper.url;
+    const text = `Check out this amazing wallpaper: ${wallpaper.name} on RAWAT SHOP!`;
+
+    if (platform === 'whatsapp') {
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + shareUrl)}`, '_blank');
+    } else if (platform === 'telegram') {
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`, '_blank');
+    } else if (platform === 'native' && navigator.share) {
+      navigator.share({
+        title: wallpaper.name,
+        text: text,
+        url: shareUrl,
+      }).catch(() => {});
+    }
+    setShowShareMenu(false);
   };
 
   return (
     <div 
-      className="card-container cursor-pointer" 
+      className="card-container cursor-pointer relative" 
       onClick={handleCardClick}
       onMouseEnter={() => setIsHovered(true)} 
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={() => { setIsHovered(false); setShowShareMenu(false); }}
     >
       <div className="card-3d relative rounded-xl overflow-hidden glass-card border border-[var(--glass-border)] flex flex-col group shadow-md">
         
-        {/* Image Area - Responsive aspect ratio */}
+        {/* Image Area */}
         <div className="relative overflow-hidden bg-black aspect-[3/4] sm:aspect-[4/5] min-h-[120px]">
           <img 
             src={wallpaper.url} 
@@ -98,7 +129,7 @@ export default function WallpaperCard({ wallpaper, onUpdateStats, onPreview }) {
           </div>
         </div>
 
-        {/* Bottom Details Area - Compact padding for mobile */}
+        {/* Bottom Details Area */}
         <div className="p-2 sm:p-4 glass border-t border-[var(--glass-border)] z-10 relative flex flex-col justify-between">
           <div>
             <h3 className="text-xs sm:text-base font-bold text-[var(--text-main)] line-clamp-1 mb-1" title={wallpaper.name}>
@@ -112,13 +143,52 @@ export default function WallpaperCard({ wallpaper, onUpdateStats, onPreview }) {
             </div>
           </div>
           
-          <div className="flex gap-1">
+          <div className="flex gap-1 relative">
             <button onClick={handleDownload} className="flex-1 bg-red-600 hover:bg-red-500 text-white font-black py-1.5 sm:py-2.5 rounded-md sm:rounded-lg flex items-center justify-center gap-1 transition-all shadow-sm uppercase tracking-wider text-[10px] sm:text-xs cursor-pointer">
               <Download size={12} className="sm:w-3.5 sm:h-3.5" /> FULL HD
             </button>
-            <button onClick={handleShare} className="p-1.5 sm:p-2.5 theme-input rounded-md sm:rounded-lg hover:text-red-500 transition-colors cursor-pointer">
+            <button onClick={handleShareClick} className="p-1.5 sm:p-2.5 theme-input rounded-md sm:rounded-lg hover:text-red-500 transition-colors cursor-pointer relative" title="Share">
               <Share2 size={12} className="sm:w-3.5 sm:h-3.5" />
             </button>
+
+            {/* SHARE POPUP MENU */}
+            {showShareMenu && (
+              <div 
+                className="absolute bottom-12 right-0 z-50 glass-card p-2 rounded-xl border border-[var(--glass-border)] shadow-2xl flex flex-col gap-1.5 min-w-[150px] animate-in zoom-in-95 bg-black/95 backdrop-blur-xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button 
+                  onClick={handleCopyLink} 
+                  className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-[var(--text-main)] hover:bg-red-600 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
+                >
+                  {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />} 
+                  {copied ? 'Copied!' : 'Copy Link'}
+                </button>
+
+                <button 
+                  onClick={(e) => handleSocialShare('whatsapp', e)} 
+                  className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-[var(--text-main)] hover:bg-green-600 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
+                >
+                  🟢 WhatsApp
+                </button>
+
+                <button 
+                  onClick={(e) => handleSocialShare('telegram', e)} 
+                  className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-[var(--text-main)] hover:bg-blue-500 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
+                >
+                  <Send size={14} /> Telegram
+                </button>
+
+                {navigator.share && (
+                  <button 
+                    onClick={(e) => handleSocialShare('native', e)} 
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-[var(--text-main)] hover:bg-red-600 hover:text-white transition-colors flex items-center gap-2 cursor-pointer border-t border-[var(--glass-border)] mt-0.5 pt-2"
+                  >
+                    📤 More Apps
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
