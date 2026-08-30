@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminManage.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Search, Edit, Trash2, Eye, Download, Heart, XCircle, CheckSquare, Square, RotateCcw } from 'lucide-react';
+import { Search, Edit, Trash2, Eye, Download, Heart, XCircle, CheckSquare, Square } from 'lucide-react';
 import axios from 'axios';
 
 const MAIN_CATEGORIES = ['Latest', 'Premium', 'Mobile Wallpapers', 'Laptop Wallpapers', 'Tablet Wallpapers'];
@@ -44,20 +44,6 @@ export default function AdminManage() {
     }
   };
 
-  // Reset Stats function (Views, Downloads, Likes to 0)
-  const handleResetStats = async (id, name) => {
-    if(window.confirm(`Reset views, downloads, and likes to 0 for "${name}"?`)) {
-      try {
-        await axios.patch(`${API_URL}/wallpapers/${id}/reset`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        fetchWallpapers(); // Refresh list
-      } catch (err) {
-        alert("Failed to reset stats");
-      }
-    }
-  };
-
   // Toggle category handler inside Edit Modal
   const toggleEditMainCategory = (cat) => {
     let currentCats = Array.isArray(editingWp.mainCategory) ? editingWp.mainCategory : [editingWp.mainCategory];
@@ -76,13 +62,16 @@ export default function AdminManage() {
       await axios.put(`${API_URL}/wallpapers/${editingWp._id}`, {
         name: editingWp.name,
         mainCategory: editingWp.mainCategory,
-        category: editingWp.category
+        category: editingWp.category,
+        views: editingWp.views,
+        downloads: editingWp.downloads,
+        likes: editingWp.likes
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       fetchWallpapers();
-      setEditingWp(null);
+      setEditingWp(null); // Close modal
     } catch(err) {
       alert("Failed to update wallpaper");
     }
@@ -104,15 +93,33 @@ export default function AdminManage() {
                <h3 className="text-2xl font-black brand-font text-[var(--text-main)]">EDIT <span className="text-red-500">{editingWp.wallpaperId}</span></h3>
                <button onClick={() => setEditingWp(null)} className="text-[var(--text-muted)] hover:text-red-500 cursor-pointer"><XCircle size={28}/></button>
              </div>
+             
              <form onSubmit={handleSaveEdit} className="space-y-4">
                 <div>
                   <label className="text-xs font-black text-[var(--text-muted)] uppercase">Name</label>
                   <input type="text" value={editingWp.name} onChange={e => setEditingWp({...editingWp, name: e.target.value})} className="w-full theme-input rounded-lg p-3 font-bold mt-1" required />
                 </div>
                 
+                {/* Manual Stats Editor Inputs */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase">Views</label>
+                    <input type="number" value={editingWp.views || 0} onChange={e => setEditingWp({...editingWp, views: e.target.value})} className="w-full theme-input rounded-lg p-2.5 font-bold mt-1 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase">Downloads</label>
+                    <input type="number" value={editingWp.downloads || 0} onChange={e => setEditingWp({...editingWp, downloads: e.target.value})} className="w-full theme-input rounded-lg p-2.5 font-bold mt-1 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase">Likes</label>
+                    <input type="number" value={editingWp.likes || 0} onChange={e => setEditingWp({...editingWp, likes: e.target.value})} className="w-full theme-input rounded-lg p-2.5 font-bold mt-1 text-sm" />
+                  </div>
+                </div>
+
+                {/* Multi-Select Checkboxes for Main Categories */}
                 <div>
                   <label className="text-xs font-black text-[var(--text-muted)] uppercase mb-2 block">Main Categories (Select Multiple)</label>
-                  <div className="grid grid-cols-2 gap-2 glass p-3 rounded-xl border border-[var(--glass-border)] max-h-40 overflow-y-auto">
+                  <div className="grid grid-cols-2 gap-2 glass p-3 rounded-xl border border-[var(--glass-border)] max-h-36 overflow-y-auto">
                     {MAIN_CATEGORIES.map(c => {
                       const currentCats = Array.isArray(editingWp.mainCategory) ? editingWp.mainCategory : [editingWp.mainCategory];
                       const isSelected = currentCats.includes(c);
@@ -142,7 +149,7 @@ export default function AdminManage() {
                   </select>
                 </div>
                 
-                <button type="submit" className="w-full bg-red-600 text-white font-black py-4 rounded-lg mt-6 uppercase tracking-widest hover:bg-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)] cursor-pointer">
+                <button type="submit" className="w-full bg-red-600 text-white font-black py-4 rounded-lg mt-4 uppercase tracking-widest hover:bg-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)] cursor-pointer">
                   Save Changes to Database
                 </button>
              </form>
@@ -178,7 +185,7 @@ export default function AdminManage() {
               {loading ? (
                 <tr><td colSpan="4" className="p-10 text-center text-[var(--text-main)] font-bold">Loading Database...</td></tr>
               ) : filtered.map(wp => (
-                <tr key={wp._id} className="hover:bg-[var(--input-bg)] transition-colors group">
+                <tr key={wp._id} className="hover:bg-[var(--input-bgy)] transition-colors group">
                   <td className="p-5 w-24">
                     <div className="w-24 h-16 rounded-lg overflow-hidden border border-[var(--glass-border)] group-hover:border-red-500/50 shadow-md">
                       <img src={wp.url} alt={wp.name} className="w-full h-full object-cover" loading="lazy"/>
@@ -209,11 +216,8 @@ export default function AdminManage() {
                     </div>
                   </td>
                   <td className="p-5 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => handleResetStats(wp._id, wp.name)} className="p-2.5 theme-input hover:bg-yellow-600 hover:text-white text-[var(--text-main)] rounded-lg transition-colors border border-[var(--glass-border)] cursor-pointer" title="Reset Stats to 0">
-                        <RotateCcw size={18} />
-                      </button>
-                      <button onClick={() => setEditingWp(wp)} className="p-2.5 theme-input hover:bg-blue-600 hover:text-white text-[var(--text-main)] rounded-lg transition-colors border border-[var(--glass-border)] cursor-pointer" title="Edit">
+                    <div className="flex items-center justify-end gap-3">
+                      <button onClick={() => setEditingWp(wp)} className="p-2.5 theme-input hover:bg-blue-600 hover:text-white text-[var(--text-main)] rounded-lg transition-colors border border-[var(--glass-border)] cursor-pointer" title="Edit Stats & Details">
                         <Edit size={18} />
                       </button>
                       <button onClick={() => handleDelete(wp._id, wp.name)} className="p-2.5 theme-input hover:bg-red-600 hover:text-white text-[var(--text-main)] rounded-lg transition-colors border border-[var(--glass-border)] shadow-none hover:shadow-[0_0_15px_rgba(220,38,38,0.6)] cursor-pointer" title="Delete">
