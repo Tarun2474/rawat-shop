@@ -73,9 +73,11 @@ const getWallpapers = async (req, res) => {
 // @desc    Update wallpaper (Name, Category)
 // @route   PUT /api/wallpapers/:id
 // @access  Private
+// backend/controllers/wallpaperController.js (Update this function)
+
 const updateWallpaper = async (req, res) => {
   try {
-    let { name, mainCategory, category } = req.body;
+    let { name, mainCategory, category, views, downloads, likes } = req.body;
     
     const wallpaper = await Wallpaper.findById(req.params.id);
 
@@ -87,13 +89,18 @@ const updateWallpaper = async (req, res) => {
       try {
         mainCategory = JSON.parse(mainCategory);
       } catch (err) {
-        // keep as is or wrap
+        // keep as is
       }
     }
 
     wallpaper.name = name || wallpaper.name;
     wallpaper.mainCategory = mainCategory || wallpaper.mainCategory;
     wallpaper.category = category || wallpaper.category;
+    
+    // Custom stats update (Marzi ke mutabiq values set karna)
+    if (views !== undefined) wallpaper.views = Number(views);
+    if (downloads !== undefined) wallpaper.downloads = Number(downloads);
+    if (likes !== undefined) wallpaper.likes = Number(likes);
 
     const updatedWallpaper = await wallpaper.save();
     res.json({ success: true, data: updatedWallpaper });
@@ -133,7 +140,7 @@ const deleteWallpaper = async (req, res) => {
 // @access  Public
 const updateStats = async (req, res) => {
   try {
-    const { action } = req.body; // 'view', 'download', 'like', 'fav'
+    const { action } = req.body; // 'view', 'download', 'like', 'unlike', 'fav', 'unfav'
     
     const wallpaper = await Wallpaper.findById(req.params.id);
     
@@ -144,11 +151,13 @@ const updateStats = async (req, res) => {
     if (action === 'view') wallpaper.views += 1;
     else if (action === 'download') wallpaper.downloads += 1;
     else if (action === 'like') wallpaper.likes += 1;
+    else if (action === 'unlike') wallpaper.likes = Math.max(0, wallpaper.likes - 1);
     else if (action === 'fav') wallpaper.favs += 1;
+    else if (action === 'unfav') wallpaper.favs = Math.max(0, wallpaper.favs - 1);
     else return res.status(400).json({ success: false, message: 'Invalid action' });
 
     await wallpaper.save();
-    res.json({ success: true, message: `Stat updated for ${action}` });
+    res.json({ success: true, message: `Stat updated for ${action}`, data: wallpaper });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update stats' });
   }
