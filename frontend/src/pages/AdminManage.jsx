@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminManage.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Search, Edit, Trash2, Eye, Download, Heart, XCircle, CheckSquare, Square } from 'lucide-react';
+import { Search, Edit, Trash2, Eye, Download, Heart, XCircle, CheckSquare, Square, RotateCcw } from 'lucide-react';
 import axios from 'axios';
 
 const MAIN_CATEGORIES = ['Latest', 'Premium', 'Mobile Wallpapers', 'Laptop Wallpapers', 'Tablet Wallpapers'];
@@ -44,6 +44,20 @@ export default function AdminManage() {
     }
   };
 
+  // Reset Stats function (Views, Downloads, Likes to 0)
+  const handleResetStats = async (id, name) => {
+    if(window.confirm(`Reset views, downloads, and likes to 0 for "${name}"?`)) {
+      try {
+        await axios.patch(`${API_URL}/wallpapers/${id}/reset`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        fetchWallpapers(); // Refresh list
+      } catch (err) {
+        alert("Failed to reset stats");
+      }
+    }
+  };
+
   // Toggle category handler inside Edit Modal
   const toggleEditMainCategory = (cat) => {
     let currentCats = Array.isArray(editingWp.mainCategory) ? editingWp.mainCategory : [editingWp.mainCategory];
@@ -67,9 +81,8 @@ export default function AdminManage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Refresh list
       fetchWallpapers();
-      setEditingWp(null); // Close modal
+      setEditingWp(null);
     } catch(err) {
       alert("Failed to update wallpaper");
     }
@@ -97,7 +110,6 @@ export default function AdminManage() {
                   <input type="text" value={editingWp.name} onChange={e => setEditingWp({...editingWp, name: e.target.value})} className="w-full theme-input rounded-lg p-3 font-bold mt-1" required />
                 </div>
                 
-                {/* Multi-Select Checkboxes for Main Categories */}
                 <div>
                   <label className="text-xs font-black text-[var(--text-muted)] uppercase mb-2 block">Main Categories (Select Multiple)</label>
                   <div className="grid grid-cols-2 gap-2 glass p-3 rounded-xl border border-[var(--glass-border)] max-h-40 overflow-y-auto">
@@ -158,7 +170,7 @@ export default function AdminManage() {
               <tr className="border-b border-[var(--glass-border)] bg-[var(--input-bg)]">
                 <th className="p-5 text-xs font-black text-[var(--text-muted)] uppercase tracking-widest">Asset Preview</th>
                 <th className="p-5 text-xs font-black text-[var(--text-muted)] uppercase tracking-widest">Metadata</th>
-                <th className="p-5 text-xs font-black text-[var(--text-muted)] uppercase tracking-widest">History Logs</th>
+                <th className="p-5 text-xs font-black text-[var(--text-muted)] uppercase tracking-widest">History Logs & Likes</th>
                 <th className="p-5 text-xs font-black text-[var(--text-muted)] uppercase tracking-widest text-right">Admin Actions</th>
               </tr>
             </thead>
@@ -177,7 +189,6 @@ export default function AdminManage() {
                       <span className="font-black text-sm text-[var(--text-main)]">{wp.name}</span>
                       <span className="text-red-500 font-black brand-font text-xs tracking-wider">{wp.wallpaperId}</span>
                       <div className="flex gap-2 mt-1 flex-wrap max-w-xs">
-                        {/* Render multiple categories safely */}
                         {Array.isArray(wp.mainCategory) ? wp.mainCategory.map(cat => (
                           <span key={cat} className="text-[10px] theme-input px-2 py-0.5 rounded uppercase font-bold border border-[var(--glass-border)] text-[var(--text-main)]">{cat}</span>
                         )) : (
@@ -191,14 +202,17 @@ export default function AdminManage() {
                     <div className="flex flex-col gap-1 text-xs font-bold text-[var(--text-muted)]">
                       <span className="text-[var(--text-main)]">Uploaded: {new Date(wp.createdAt).toLocaleDateString()}</span>
                       <div className="flex gap-4 mt-1">
-                         <span className="flex items-center gap-1 text-blue-500"><Eye size={12}/> {wp.views}</span>
-                         <span className="flex items-center gap-1 text-green-500"><Download size={12}/> {wp.downloads}</span>
-                         <span className="flex items-center gap-1 text-red-500"><Heart size={12}/> {wp.likes}</span>
+                         <span className="flex items-center gap-1 text-blue-500"><Eye size={12}/> {wp.views || 0}</span>
+                         <span className="flex items-center gap-1 text-green-500"><Download size={12}/> {wp.downloads || 0}</span>
+                         <span className="flex items-center gap-1 text-red-500"><Heart size={12} className="fill-current"/> {wp.likes || 0}</span>
                       </div>
                     </div>
                   </td>
                   <td className="p-5 text-right">
-                    <div className="flex items-center justify-end gap-3">
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => handleResetStats(wp._id, wp.name)} className="p-2.5 theme-input hover:bg-yellow-600 hover:text-white text-[var(--text-main)] rounded-lg transition-colors border border-[var(--glass-border)] cursor-pointer" title="Reset Stats to 0">
+                        <RotateCcw size={18} />
+                      </button>
                       <button onClick={() => setEditingWp(wp)} className="p-2.5 theme-input hover:bg-blue-600 hover:text-white text-[var(--text-main)] rounded-lg transition-colors border border-[var(--glass-border)] cursor-pointer" title="Edit">
                         <Edit size={18} />
                       </button>
