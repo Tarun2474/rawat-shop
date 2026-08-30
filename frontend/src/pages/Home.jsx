@@ -73,7 +73,10 @@ export default function Home() {
     return wallpapers.filter(w => {
       const q = searchQuery.toLowerCase();
       const matchesSearch = w.name.toLowerCase().includes(q) || w.wallpaperId.toLowerCase().includes(q) || w.category.toLowerCase().includes(q);
-      const matchesMain = activeMainCat === 'Latest' || w.mainCategory === activeMainCat;
+      
+      // Fix: Check if mainCategory array includes activeMainCat or if activeMainCat is 'Latest'
+      const matchesMain = activeMainCat === 'Latest' || (Array.isArray(w.mainCategory) ? w.mainCategory.includes(activeMainCat) : w.mainCategory === activeMainCat);
+      
       const matchesSub = activeSubCat === 'All' || w.category.toLowerCase() === activeSubCat.toLowerCase();
       return matchesSearch && matchesMain && matchesSub;
     });
