@@ -48,6 +48,20 @@ export default function Home() {
     fetchWallpapers();
   }, [API_URL]);
 
+  // Automatically open preview modal if URL has ?wallpaper=WLP001
+  useEffect(() => {
+    if (wallpapers.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const wpId = params.get('wallpaper');
+      if (wpId) {
+        const foundWp = wallpapers.find(w => w.wallpaperId === wpId);
+        if (foundWp) {
+          setPreviewWallpaper(foundWp);
+        }
+      }
+    }
+  }, [wallpapers]);
+
   // Reset to page 1 whenever search query or categories change
   useEffect(() => {
     setCurrentPage(1);
