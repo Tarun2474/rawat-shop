@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminAnalytics.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Download, Calendar, Filter, Eye, Heart, TrendingUp } from 'lucide-react';
+import { Download, Calendar, Filter, Eye, Heart, TrendingUp, Mail } from 'lucide-react';
 import axios from 'axios';
 
 export default function AdminAnalytics() {
@@ -10,6 +10,7 @@ export default function AdminAnalytics() {
   const [endDate, setEndDate] = useState('');
   const [actionFilter, setActionFilter] = useState('');
   const [loading, setLoading] = useState(false);
+  const [reportEmail, setReportEmail] = useState('');
 
   const API_URL = import.meta.env.VITE_API_URL;
   const token = sessionStorage.getItem('adminToken');
@@ -38,9 +39,34 @@ export default function AdminAnalytics() {
     }
   };
 
+  // Fetch saved email on load
+  const fetchReportEmail = async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/analytics/get-email`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (data.success) setReportEmail(data.email);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchReport();
+    fetchReportEmail();
   }, [startDate, endDate, actionFilter]);
+
+  const handleSaveEmail = async () => {
+    try {
+      const { data } = await axios.post(`${API_URL}/analytics/update-email`, 
+        { email: reportEmail },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (data.success) alert("Monthly Report Email Updated Successfully!");
+    } catch (err) {
+      alert("Failed to update email");
+    }
+  };
 
   const handleDownloadExcel = async () => {
     try {
@@ -71,6 +97,32 @@ export default function AdminAnalytics() {
         >
           <Download size={18} /> Download Excel Report
         </button>
+      </div>
+
+      {/* Dynamic Email Configuration Card */}
+      <div className="glass-card p-5 rounded-2xl border border-[var(--glass-border)] flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-xl bg-red-600/10 text-red-500"><Mail size={22} /></div>
+          <div>
+            <h4 className="text-sm font-black text-[var(--text-main)] uppercase">Monthly Report Gmail Recipient</h4>
+            <p className="text-xs text-[var(--text-muted)] font-bold">Automated monthly performance report will be sent to this email address.</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <input 
+            type="email" 
+            value={reportEmail} 
+            onChange={e => setReportEmail(e.target.value)} 
+            placeholder="Enter recipient email..." 
+            className="theme-input px-4 py-2.5 rounded-xl text-xs font-bold w-full md:w-72" 
+          />
+          <button 
+            onClick={handleSaveEmail} 
+            className="bg-red-600 hover:bg-red-500 text-white font-black px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-pointer shrink-0"
+          >
+            Save Email
+          </button>
+        </div>
       </div>
 
       {/* Metrics Cards */}
