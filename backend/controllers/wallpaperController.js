@@ -1,6 +1,7 @@
 // backend/controllers/wallpaperController.js
 
 const Wallpaper = require('../models/Wallpaper');
+const ActivityLog = require('../models/ActivityLog');
 const { cloudinary } = require('../config/cloudinary');
 
 // Helper to generate Auto ID like WLP001, WLP002
@@ -70,11 +71,9 @@ const getWallpapers = async (req, res) => {
   }
 };
 
-// @desc    Update wallpaper (Name, Category)
+// @desc    Update wallpaper (Name, Category, Custom Stats)
 // @route   PUT /api/wallpapers/:id
 // @access  Private
-// backend/controllers/wallpaperController.js (Update this function)
-
 const updateWallpaper = async (req, res) => {
   try {
     let { name, mainCategory, category, views, downloads, likes } = req.body;
@@ -135,7 +134,7 @@ const deleteWallpaper = async (req, res) => {
   }
 };
 
-// @desc    Update stats (Views, Downloads, Likes, Favs)
+// @desc    Update stats (Views, Downloads, Likes, Favs) & Record Activity Log
 // @route   PATCH /api/wallpapers/:id/stats
 // @access  Public
 const updateStats = async (req, res) => {
@@ -157,6 +156,15 @@ const updateStats = async (req, res) => {
     else return res.status(400).json({ success: false, message: 'Invalid action' });
 
     await wallpaper.save();
+
+    // Record to Activity Log for Admin Analytics & Excel Report
+    if (['view', 'download', 'like'].includes(action)) {
+      await ActivityLog.create({
+        wallpaperId: wallpaper._id,
+        action: action
+      });
+    }
+
     res.json({ success: true, message: `Stat updated for ${action}`, data: wallpaper });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update stats' });
