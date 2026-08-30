@@ -65,8 +65,9 @@ export default function WallpaperCard({ wallpaper, onUpdateStats, onPreview }) {
     setShowShareModal(true);
   };
 
-  const shareUrl = window.location.href;
-  const shareText = `Check out this amazing wallpaper: ${wallpaper.name} on RAWAT SHOP!`;
+  // Fix: Generate a specific shareable link for this wallpaper
+  const shareUrl = `${window.location.origin}/?wallpaper=${wallpaper.wallpaperId}`;
+  const shareText = `Check out this amazing wallpaper (${wallpaper.wallpaperId} - ${wallpaper.name}) on RAWAT SHOP!`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareUrl);
