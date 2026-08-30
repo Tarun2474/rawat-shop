@@ -5,6 +5,9 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const Admin = require("./models/Admin");
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const cron = require('node-cron');
+const { sendMonthlyEmailReport } = require('./controllers/analyticsController');
 
 // Load environment variables
 dotenv.config();
@@ -35,6 +38,13 @@ const wallpaperRoutes = require("./routes/wallpaperRoutes");
 // Use Routes
 app.use("/admin", adminRoutes);
 app.use("/wallpapers", wallpaperRoutes);
+app.use("/api/analytics", analyticsRoutes); // 🌟 Analytics Route Registered
+
+// Schedule cron job to run on the 1st day of every month at 08:00 AM
+cron.schedule('0 8 1 * *', () => {
+  console.log("Running monthly email report generator...");
+  sendMonthlyEmailReport();
+});
 
 // Error Handler
 app.use((err, req, res, next) => {
