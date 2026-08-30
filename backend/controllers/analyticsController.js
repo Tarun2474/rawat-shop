@@ -1,5 +1,8 @@
+// backend/controllers/analyticsController.js
+
 const ActivityLog = require('../models/ActivityLog');
 const Wallpaper = require('../models/Wallpaper');
+const Setting = require('../models/Setting');
 const XLSX = require('xlsx');
 const nodemailer = require('nodemailer');
 
@@ -62,9 +65,45 @@ const exportExcelReport = async (req, res) => {
   }
 };
 
-// @desc Send automated monthly report to Gmail
+// @desc Get current saved report email from database
+const getReportEmail = async (req, res) => {
+  try {
+    let setting = await Setting.findOne({ key: 'reportEmail' });
+    res.json({ success: true, email: setting ? setting.value : process.env.ADMIN_EMAIL });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc Update report email in database
+const updateReportEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: "Email is required" });
+
+    await Setting.findOneAndUpdate(
+      { key: 'reportEmail' },
+      { value: email },
+      { upsert: true, new: true }
+    );
+
+    res.json({ success: true, message: "Report email updated successfully!" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc Send automated monthly report to Gmail (Dynamic from DB)
 const sendMonthlyEmailReport = async () => {
   try {
+    const emailSetting = await Setting.findOne({ key: 'reportEmail' });
+    const targetEmail = emailSetting ? emailSetting.value : process.env.ADMIN_EMAIL;
+
+    if (!targetEmail) {
+      console.log("No target email found for monthly report.");
+      return;
+    }
+
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
     const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 0);
 
@@ -82,7 +121,7 @@ const sendMonthlyEmailReport = async () => {
 
     const mailOptions = {
       from: process.env.ADMIN_EMAIL,
-      to: process.env.ADMIN_EMAIL,
+      to: targetEmail,
       subject: '📊 RAWAT SHOP - Monthly Website Performance Report',
       html: `
         <h2>Monthly Traffic & Performance Report</h2>
@@ -97,10 +136,16 @@ const sendMonthlyEmailReport = async () => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log("Monthly Report email sent successfully!");
+    console.log(`Monthly Report email sent successfully to ${targetEmail}!`);
   } catch (error) {
     console.error("Failed to send monthly email report:", error);
   }
 };
 
-module.exports = { getAnalyticsReport, exportExcelReport, sendMonthlyEmailReport };
+module.exports = { 
+  getAnalyticsReport, 
+  exportExcelReport, 
+  getReportEmail, 
+  updateReportEmail, 
+  sendMonthlyEmailReport 
+};
