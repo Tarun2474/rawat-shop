@@ -57,6 +57,14 @@ export default function Home() {
         const foundWp = wallpapers.find(w => w.wallpaperId === wpId);
         if (foundWp) {
           setPreviewWallpaper(foundWp);
+          
+          // Yahan hum view count update karne ki request bhejenge!
+          axios.patch(`${API_URL}/wallpapers/${foundWp._id}/stats`, { action: 'view' })
+            .then(() => {
+              // Local state mein bhi views ko +1 update kar do
+              setWallpapers(prev => prev.map(w => w._id === foundWp._id ? { ...w, views: w.views + 1 } : w));
+            })
+            .catch(err => console.error("Failed to record view:", err));
         }
       }
     }
