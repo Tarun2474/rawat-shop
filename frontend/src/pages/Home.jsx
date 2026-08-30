@@ -48,7 +48,7 @@ export default function Home() {
     fetchWallpapers();
   }, [API_URL]);
 
-  // Automatically open preview modal if URL has ?wallpaper=WLP001
+  // Automatically open preview modal if URL has ?wallpaper=WLP001 (Runs only once when wallpapers load)
   useEffect(() => {
     if (wallpapers.length > 0) {
       const params = new URLSearchParams(window.location.search);
@@ -58,10 +58,12 @@ export default function Home() {
         if (foundWp) {
           setPreviewWallpaper(foundWp);
           
-          // Yahan hum view count update karne ki request bhejenge!
+          // Clear URL parameter immediately so it doesn't loop when state updates
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          // Increment view count once
           axios.patch(`${API_URL}/wallpapers/${foundWp._id}/stats`, { action: 'view' })
             .then(() => {
-              // Local state mein bhi views ko +1 update kar do
               setWallpapers(prev => prev.map(w => w._id === foundWp._id ? { ...w, views: w.views + 1 } : w));
             })
             .catch(err => console.error("Failed to record view:", err));
