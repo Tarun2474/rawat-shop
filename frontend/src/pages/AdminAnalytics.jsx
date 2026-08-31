@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminAnalytics.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Download, Calendar, Filter, Eye, Heart, TrendingUp, Mail, AlertCircle } from 'lucide-react';
+import { Download, Calendar, Filter, Eye, Heart, TrendingUp, Mail, Database } from 'lucide-react';
 import axios from 'axios';
 
 export default function AdminAnalytics() {
@@ -76,7 +76,7 @@ export default function AdminAnalytics() {
       const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
-      link.download = 'RawatShop_3Month_Traffic_Report.xlsx';
+      link.download = 'RawatShop_Performance_Report.xlsx';
       link.click();
     } catch (err) {
       alert("Failed to download Excel report");
@@ -87,21 +87,15 @@ export default function AdminAnalytics() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-black mb-1 text-[var(--text-main)]">WEBSITE <span className="text-red-500">ANALYTICS</span></h2>
-          <p className="text-[var(--text-muted)] font-bold">Track real-time traffic, downloads, custom date reports, and Excel exports.</p>
+          <h2 className="text-3xl font-black mb-1 text-[var(--text-main)]">TRAFFIC & <span className="text-red-500">PERFORMANCE ANALYTICS</span></h2>
+          <p className="text-[var(--text-muted)] font-bold">Comprehensive custom date performance logs, live metrics, and Excel reports.</p>
         </div>
         <button 
           onClick={handleDownloadExcel}
           className="bg-green-600 hover:bg-green-500 text-white font-black px-6 py-3 rounded-xl flex items-center gap-2 shadow-[0_0_15px_rgba(22,163,74,0.4)] cursor-pointer uppercase text-xs tracking-wider"
         >
-          <Download size={18} /> Download Excel Report
+          <Download size={18} /> Export Excel Report
         </button>
-      </div>
-
-      {/* Storage Protection Notice */}
-      <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl flex items-center gap-3 text-amber-500 text-xs font-bold">
-        <AlertCircle size={20} className="shrink-0" />
-        <span>Database Storage Protection Active: Reports and logs are optimized for the past 3 months to prevent MongoDB storage overflow.</span>
       </div>
 
       {/* Dynamic Email Configuration Card */}
@@ -173,7 +167,7 @@ export default function AdminAnalytics() {
         <div className="flex items-center gap-2">
           <Filter size={16} className="text-[var(--text-muted)]" />
           <select value={actionFilter} onChange={e => setActionFilter(e.target.value)} className="theme-input px-4 py-2 rounded-xl text-xs font-bold uppercase cursor-pointer">
-            <option value="">All Actions</option>
+            <option value="">All Actions (Live)</option>
             <option value="view">Views Only</option>
             <option value="download">Downloads Only</option>
             <option value="like">Likes Only</option>
@@ -196,7 +190,11 @@ export default function AdminAnalytics() {
             </thead>
             <tbody className="divide-y divide-[var(--glass-border)]">
               {loading ? (
-                <tr><td colSpan="5" className="p-10 text-center text-[var(--text-main)] font-bold">Loading Analytics...</td></tr>
+                <tr>
+                  <td colSpan="5" className="p-12 text-center text-[var(--text-main)] font-bold">
+                    Loading performance data...
+                  </td>
+                </tr>
               ) : report.data && report.data.length > 0 ? (
                 report.data.map(log => (
                   <tr key={log._id} className="hover:bg-[var(--input-bg)] transition-colors">
@@ -218,7 +216,19 @@ export default function AdminAnalytics() {
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan="5" className="p-10 text-center text-[var(--text-muted)] font-bold">No activity logs found for this date range.</td></tr>
+                <tr>
+                  <td colSpan="5" className="p-16 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <div className="p-4 rounded-2xl bg-red-600/10 text-red-500">
+                        <Database size={28} />
+                      </div>
+                      <p className="text-sm font-black text-[var(--text-main)] uppercase tracking-wide">No Data Available</p>
+                      <p className="text-xs font-bold text-[var(--text-muted)] max-w-sm">
+                        No traffic or activity logs found for the selected date range or action filter. Try choosing a different date or filter.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
