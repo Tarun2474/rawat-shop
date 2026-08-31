@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminAnalytics.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Download, Calendar, Filter, Eye, Heart, TrendingUp, Mail } from 'lucide-react';
+import { Download, Calendar, Filter, Eye, Heart, TrendingUp, Mail, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 
 export default function AdminAnalytics() {
@@ -77,7 +77,7 @@ export default function AdminAnalytics() {
       const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
-      link.download = 'RawatShop_Traffic_Report.xlsx';
+      link.download = 'RawatShop_3Month_Traffic_Report.xlsx';
       link.click();
     } catch (err) {
       alert("Failed to download Excel report");
@@ -89,14 +89,20 @@ export default function AdminAnalytics() {
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
           <h2 className="text-3xl font-black brand-font mb-1 text-[var(--text-main)]">WEBSITE <span className="text-red-500">ANALYTICS</span></h2>
-          <p className="text-[var(--text-muted)] font-bold">Track real-time traffic, downloads, custom date reports, and Excel exports.</p>
+          <p className="text-[var(--text-muted)] font-bold">Live performance reports, custom day selection (Up to past 3 months), and Excel backups.</p>
         </div>
         <button 
           onClick={handleDownloadExcel}
           className="bg-green-600 hover:bg-green-500 text-white font-black px-6 py-3 rounded-xl flex items-center gap-2 shadow-[0_0_15px_rgba(22,163,74,0.4)] cursor-pointer uppercase text-xs tracking-wider"
         >
-          <Download size={18} /> Download Excel Report
+          <Download size={18} /> Download 3-Month Excel
         </button>
+      </div>
+
+      {/* Storage Protection Notice */}
+      <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl flex items-center gap-3 text-amber-500 text-xs font-bold">
+        <AlertCircle size={20} className="shrink-0" />
+        <span>Database Storage Protection Active: Analytics reports and activity logs are optimized for the past 3 months to prevent MongoDB storage overflow on free tier.</span>
       </div>
 
       {/* Dynamic Email Configuration Card */}
@@ -125,12 +131,12 @@ export default function AdminAnalytics() {
         </div>
       </div>
 
-      {/* Metrics Cards */}
+      {/* Live / Individual Metrics Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="glass-card p-5 rounded-2xl border border-[var(--glass-border)] flex items-center gap-4">
           <div className="p-4 rounded-xl bg-blue-600/10 text-blue-500"><Eye size={24} /></div>
           <div>
-            <p className="text-xs font-black text-[var(--text-muted)] uppercase">Total Views</p>
+            <p className="text-xs font-black text-[var(--text-muted)] uppercase">Traffic (Views)</p>
             <h3 className="text-2xl font-black text-[var(--text-main)]">{report.metrics.totalViews}</h3>
           </div>
         </div>
@@ -138,7 +144,7 @@ export default function AdminAnalytics() {
         <div className="glass-card p-5 rounded-2xl border border-[var(--glass-border)] flex items-center gap-4">
           <div className="p-4 rounded-xl bg-green-600/10 text-green-500"><Download size={24} /></div>
           <div>
-            <p className="text-xs font-black text-[var(--text-muted)] uppercase">Total Downloads</p>
+            <p className="text-xs font-black text-[var(--text-muted)] uppercase">Downloads</p>
             <h3 className="text-2xl font-black text-[var(--text-main)]">{report.metrics.totalDownloads}</h3>
           </div>
         </div>
@@ -146,7 +152,7 @@ export default function AdminAnalytics() {
         <div className="glass-card p-5 rounded-2xl border border-[var(--glass-border)] flex items-center gap-4">
           <div className="p-4 rounded-xl bg-red-600/10 text-red-500"><Heart size={24} /></div>
           <div>
-            <p className="text-xs font-black text-[var(--text-muted)] uppercase">Total Likes</p>
+            <p className="text-xs font-black text-[var(--text-muted)] uppercase">Likes</p>
             <h3 className="text-2xl font-black text-[var(--text-main)]">{report.metrics.totalLikes}</h3>
           </div>
         </div>
@@ -168,8 +174,8 @@ export default function AdminAnalytics() {
         <div className="flex items-center gap-2">
           <Filter size={16} className="text-[var(--text-muted)]" />
           <select value={actionFilter} onChange={e => setActionFilter(e.target.value)} className="theme-input px-4 py-2 rounded-xl text-xs font-bold uppercase cursor-pointer">
-            <option value="">All Actions</option>
-            <option value="view">Views Only</option>
+            <option value="">All Combined (Live)</option>
+            <option value="view">Traffic (Views) Only</option>
             <option value="download">Downloads Only</option>
             <option value="like">Likes Only</option>
           </select>
