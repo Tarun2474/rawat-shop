@@ -7,7 +7,7 @@ const nodemailer = require("nodemailer");
 
 // =====================================================
 // GET ANALYTICS REPORT
-// Custom date filter + action filter + 3 months limit check
+// Custom date filter + action filter (Safe for new databases)
 // =====================================================
 
 const getAnalyticsReport = async (req, res) => {
@@ -16,46 +16,40 @@ const getAnalyticsReport = async (req, res) => {
 
     const query = {};
 
-    // 🌟 Enforce maximum 3 months (90 days) window to prevent MongoDB free tier overflow
-    const maxAllowedDate = new Date();
-    maxAllowedDate.setMonth(maxAllowedDate.getMonth() - 3);
+    // Date filter logic (No strict 3-month block, allows any valid selected dates)
+    if (startDate || endDate) {
+      query.createdAt = {};
 
-    let start = startDate ? new Date(startDate) : maxAllowedDate;
-    
-    // If user requested a date older than 3 months, cap it to 3 months ago
-    if (start < maxAllowedDate) {
-      start = maxAllowedDate;
-    }
-
-    if (Number.isNaN(start.getTime())) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid startDate",
-      });
-    }
-    query.createdAt = { $gte: start };
-
-    if (endDate) {
-      const end = new Date(endDate);
-
-      if (Number.isNaN(end.getTime())) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid endDate",
-        });
+      if (startDate) {
+        const start = new Date(startDate);
+        if (Number.isNaN(start.getTime())) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid startDate",
+          });
+        }
+        query.createdAt.$gte = start;
       }
 
-      // Include the complete end date
-      end.setHours(23, 59, 59, 999);
-      query.createdAt.$lte = end;
+      if (endDate) {
+        const end = new Date(endDate);
+        if (Number.isNaN(end.getTime())) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid endDate",
+          });
+        }
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
     }
 
-    // Action filter (view, download, like)
+    // Action filter
     if (action) {
       query.action = action;
     }
 
-    // Get activity logs within the safe 3-month window
+    // Get activity logs
     const logs = await ActivityLog.find(query)
       .populate(
         "wallpaperId",
@@ -63,7 +57,7 @@ const getAnalyticsReport = async (req, res) => {
       )
       .sort({ createdAt: -1 });
 
-    // Summary metrics for the filtered range
+    // Summary metrics
     const totalDownloads = await ActivityLog.countDocuments({
       ...query,
       action: "download",
@@ -99,15 +93,12 @@ const getAnalyticsReport = async (req, res) => {
 };
 
 // =====================================================
-// EXPORT ANALYTICS REPORT AS EXCEL (Restricted to 3 months)
+// EXPORT ANALYTICS REPORT AS EXCEL
 // =====================================================
 
 const exportExcelReport = async (req, res) => {
   try {
-    const maxAllowedDate = new Date();
-    maxAllowedDate.setMonth(maxAllowedDate.getMonth() - 3);
-
-    const logs = await ActivityLog.find({ createdAt: { $gte: maxAllowedDate } })
+    const logs = await ActivityLog.find({})
       .populate(
         "wallpaperId",
         "wallpaperId name category"
@@ -144,7 +135,7 @@ const exportExcelReport = async (req, res) => {
     XLSX.utils.book_append_sheet(
       workbook,
       worksheet,
-      "3-Month Traffic Report"
+      "Website Traffic Report"
     );
 
     const buffer = XLSX.write(workbook, {
@@ -154,7 +145,7 @@ const exportExcelReport = async (req, res) => {
 
     res.setHeader(
       "Content-Disposition",
-      'attachment; filename="RawatShop_3Month_Traffic_Report.xlsx"'
+      'attachment; filename="RawatShop_Traffic_Report.xlsx"'
     );
 
     res.setHeader(
@@ -276,7 +267,6 @@ const sendMonthlyEmailReport = async () => {
       );
     }
 
-    // Previous calendar month
     const now = new Date();
 
     const startOfPreviousMonth = new Date(
@@ -306,7 +296,6 @@ const sendMonthlyEmailReport = async () => {
       },
     };
 
-    // Monthly metrics
     const totalDownloads =
       await ActivityLog.countDocuments({
         ...dateQuery,
@@ -325,7 +314,6 @@ const sendMonthlyEmailReport = async () => {
         action: "like",
       });
 
-    // Gmail transporter
     const transporter =
       nodemailer.createTransport({
         service: "gmail",
@@ -355,73 +343,33 @@ const sendMonthlyEmailReport = async () => {
       html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.6;">
           <h2>RAWAT SHOP V2.0</h2>
-
           <h3>Monthly Traffic & Performance Report</h3>
-
-          <p>
-            Here is the website performance summary
-            for <strong>${monthName}</strong>.
-          </p>
-
+          <p>Here is the website performance summary for <strong>${monthName}</strong>.</p>
           <ul>
-            <li>
-              <strong>Total Views:</strong>
-              ${totalViews}
-            </li>
-
-            <li>
-              <strong>Total Downloads:</strong>
-              ${totalDownloads}
-            </li>
-
-            <li>
-              <strong>Total Likes:</strong>
-              ${totalLikes}
-            </li>
+            <li><strong>Total Views:</strong> ${totalViews}</li>
+            <li><strong>Total Downloads:</strong> ${totalDownloads}</li>
+            <li><strong>Total Likes:</strong> ${totalLikes}</li>
           </ul>
-
-          <p>
-            Log in to your Admin Dashboard to view
-            detailed analytics and download the
-            complete Excel report.
-          </p>
-
-          <p>
-            Regards,<br>
-            RAWAT SHOP V2.0
-          </p>
+          <p>Log in to your Admin Dashboard to view detailed analytics.</p>
+          <p>Regards,<br>RAWAT SHOP V2.0</p>
         </div>
       `,
     };
 
     await transporter.sendMail(mailOptions);
-
-    console.log(
-      `Monthly report sent successfully to ${targetEmail}`
-    );
+    console.log(`Monthly report sent successfully to ${targetEmail}`);
 
     return {
       success: true,
       targetEmail,
       month: monthName,
-      metrics: {
-        totalViews,
-        totalDownloads,
-        totalLikes,
-      },
+      metrics: { totalViews, totalDownloads, totalLikes },
     };
   } catch (error) {
-    console.error(
-      "Failed to send monthly email report:",
-      error
-    );
+    console.error("Failed to send monthly email report:", error);
     throw error;
   }
 };
-
-// =====================================================
-// EXPORT CONTROLLERS
-// =====================================================
 
 module.exports = {
   getAnalyticsReport,
