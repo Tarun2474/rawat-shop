@@ -16,7 +16,7 @@ const getAnalyticsReport = async (req, res) => {
 
     const query = {};
 
-    // Date filter logic (No strict 3-month block, allows any valid selected dates)
+    // Date filter logic
     if (startDate || endDate) {
       query.createdAt = {};
 
@@ -57,7 +57,7 @@ const getAnalyticsReport = async (req, res) => {
       )
       .sort({ createdAt: -1 });
 
-    // Summary metrics
+    // Summary metrics for the filtered range
     const totalDownloads = await ActivityLog.countDocuments({
       ...query,
       action: "download",
