@@ -7,7 +7,7 @@ const nodemailer = require("nodemailer");
 
 // =====================================================
 // GET ANALYTICS REPORT
-// Custom date filter + action filter
+// Custom date filter + action filter + 3 months limit check
 // =====================================================
 
 const getAnalyticsReport = async (req, res) => {
@@ -16,45 +16,46 @@ const getAnalyticsReport = async (req, res) => {
 
     const query = {};
 
-    // Date filter
-    if (startDate || endDate) {
-      query.createdAt = {};
+    // 🌟 Enforce maximum 3 months (90 days) window to prevent MongoDB free tier overflow
+    const maxAllowedDate = new Date();
+    maxAllowedDate.setMonth(maxAllowedDate.getMonth() - 3);
 
-      if (startDate) {
-        const start = new Date(startDate);
-
-        if (Number.isNaN(start.getTime())) {
-          return res.status(400).json({
-            success: false,
-            message: "Invalid startDate",
-          });
-        }
-
-        query.createdAt.$gte = start;
-      }
-
-      if (endDate) {
-        const end = new Date(endDate);
-
-        if (Number.isNaN(end.getTime())) {
-          return res.status(400).json({
-            success: false,
-            message: "Invalid endDate",
-          });
-        }
-
-        // Include the complete end date
-        end.setHours(23, 59, 59, 999);
-        query.createdAt.$lte = end;
-      }
+    let start = startDate ? new Date(startDate) : maxAllowedDate;
+    
+    // If user requested a date older than 3 months, cap it to 3 months ago
+    if (start < maxAllowedDate) {
+      start = maxAllowedDate;
     }
 
-    // Action filter
+    if (Number.isNaN(start.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid startDate",
+      });
+    }
+    query.createdAt = { $gte: start };
+
+    if (endDate) {
+      const end = new Date(endDate);
+
+      if (Number.isNaN(end.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid endDate",
+        });
+      }
+
+      // Include the complete end date
+      end.setHours(23, 59, 59, 999);
+      query.createdAt.$lte = end;
+    }
+
+    // Action filter (view, download, like)
     if (action) {
       query.action = action;
     }
 
-    // Get activity logs
+    // Get activity logs within the safe 3-month window
     const logs = await ActivityLog.find(query)
       .populate(
         "wallpaperId",
@@ -62,7 +63,7 @@ const getAnalyticsReport = async (req, res) => {
       )
       .sort({ createdAt: -1 });
 
-    // Summary metrics
+    // Summary metrics for the filtered range
     const totalDownloads = await ActivityLog.countDocuments({
       ...query,
       action: "download",
@@ -98,12 +99,15 @@ const getAnalyticsReport = async (req, res) => {
 };
 
 // =====================================================
-// EXPORT ANALYTICS REPORT AS EXCEL
+// EXPORT ANALYTICS REPORT AS EXCEL (Restricted to 3 months)
 // =====================================================
 
 const exportExcelReport = async (req, res) => {
   try {
-    const logs = await ActivityLog.find({})
+    const maxAllowedDate = new Date();
+    maxAllowedDate.setMonth(maxAllowedDate.getMonth() - 3);
+
+    const logs = await ActivityLog.find({ createdAt: { $gte: maxAllowedDate } })
       .populate(
         "wallpaperId",
         "wallpaperId name category"
@@ -140,7 +144,7 @@ const exportExcelReport = async (req, res) => {
     XLSX.utils.book_append_sheet(
       workbook,
       worksheet,
-      "Website Traffic Report"
+      "3-Month Traffic Report"
     );
 
     const buffer = XLSX.write(workbook, {
@@ -150,7 +154,7 @@ const exportExcelReport = async (req, res) => {
 
     res.setHeader(
       "Content-Disposition",
-      'attachment; filename="RawatShop_Traffic_Report.xlsx"'
+      'attachment; filename="RawatShop_3Month_Traffic_Report.xlsx"'
     );
 
     res.setHeader(
@@ -411,10 +415,6 @@ const sendMonthlyEmailReport = async () => {
       "Failed to send monthly email report:",
       error
     );
-
-    // Important:
-    // Throw the error so the Vercel Cron endpoint
-    // knows that the operation failed.
     throw error;
   }
 };
