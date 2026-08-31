@@ -1,5 +1,3 @@
-// backend/controllers/analyticsController.js
-
 const ActivityLog = require("../models/ActivityLog");
 const Setting = require("../models/Setting");
 const XLSX = require("xlsx");
@@ -7,7 +5,7 @@ const nodemailer = require("nodemailer");
 
 // =====================================================
 // GET ANALYTICS REPORT
-// Custom date filter + action filter (Safe for new databases)
+// Custom date filter + action filter
 // =====================================================
 
 const getAnalyticsReport = async (req, res) => {
@@ -16,70 +14,120 @@ const getAnalyticsReport = async (req, res) => {
 
     const query = {};
 
-    // Date filter logic
+    // -----------------------------------------------------
+    // Date filter
+    // startDate = 00:00:00.000
+    // endDate   = 23:59:59.999
+    // -----------------------------------------------------
     if (startDate || endDate) {
       query.createdAt = {};
 
       if (startDate) {
-        const start = new Date(startDate);
+        if (
+          typeof startDate !== "string" ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(startDate)
+        ) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid startDate. Expected format: YYYY-MM-DD",
+          });
+        }
+
+        const start = new Date(`${startDate}T00:00:00.000`);
+
         if (Number.isNaN(start.getTime())) {
           return res.status(400).json({
             success: false,
             message: "Invalid startDate",
           });
         }
+
         query.createdAt.$gte = start;
       }
 
       if (endDate) {
-        const end = new Date(endDate);
+        if (
+          typeof endDate !== "string" ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(endDate)
+        ) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid endDate. Expected format: YYYY-MM-DD",
+          });
+        }
+
+        const end = new Date(`${endDate}T23:59:59.999`);
+
         if (Number.isNaN(end.getTime())) {
           return res.status(400).json({
             success: false,
             message: "Invalid endDate",
           });
         }
-        end.setHours(23, 59, 59, 999);
+
         query.createdAt.$lte = end;
+      }
+
+      // Prevent an invalid reversed range.
+      if (
+        query.createdAt.$gte &&
+        query.createdAt.$lte &&
+        query.createdAt.$gte > query.createdAt.$lte
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "startDate cannot be later than endDate",
+        });
       }
     }
 
+    // -----------------------------------------------------
     // Action filter
+    // -----------------------------------------------------
     if (action) {
       query.action = action;
     }
 
-    // Get activity logs
-    const logs = await ActivityLog.find(query)
-      .populate(
-        "wallpaperId",
-        "wallpaperId name category url"
-      )
-      .sort({ createdAt: -1 });
+    // -----------------------------------------------------
+    // Fetch activity logs + summary metrics
+    // -----------------------------------------------------
+    const [logs, totalDownloads, totalViews, totalLikes] =
+      await Promise.all([
+        ActivityLog.find(query)
+          .populate(
+            "wallpaperId",
+            "wallpaperId name category url"
+          )
+          .sort({ createdAt: -1 }),
 
-    // Summary metrics for the filtered range
-    const totalDownloads = await ActivityLog.countDocuments({
-      ...query,
-      action: "download",
-    });
+        ActivityLog.countDocuments({
+          ...query,
+          action: "download",
+        }),
 
-    const totalViews = await ActivityLog.countDocuments({
-      ...query,
-      action: "view",
-    });
+        ActivityLog.countDocuments({
+          ...query,
+          action: "view",
+        }),
 
-    const totalLikes = await ActivityLog.countDocuments({
-      ...query,
-      action: "like",
-    });
+        ActivityLog.countDocuments({
+          ...query,
+          action: "like",
+        }),
+      ]);
 
     return res.json({
       success: true,
+
       metrics: {
         totalDownloads,
         totalViews,
         totalLikes,
       },
+
+      // Useful for frontend chart rendering.
+      totalRecords: logs.length,
+
       data: logs,
     });
   } catch (error) {
@@ -87,7 +135,8 @@ const getAnalyticsReport = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Failed to generate analytics report",
+      message:
+        error.message || "Failed to generate analytics report",
     });
   }
 };
@@ -357,16 +406,27 @@ const sendMonthlyEmailReport = async () => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`Monthly report sent successfully to ${targetEmail}`);
+
+    console.log(
+      `Monthly report sent successfully to ${targetEmail}`
+    );
 
     return {
       success: true,
       targetEmail,
       month: monthName,
-      metrics: { totalViews, totalDownloads, totalLikes },
+      metrics: {
+        totalViews,
+        totalDownloads,
+        totalLikes,
+      },
     };
   } catch (error) {
-    console.error("Failed to send monthly email report:", error);
+    console.error(
+      "Failed to send monthly email report:",
+      error
+    );
+
     throw error;
   }
 };
