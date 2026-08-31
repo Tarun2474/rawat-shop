@@ -32,7 +32,7 @@ export default function AdminDashboard() {
   const API_URL = import.meta.env.VITE_API_URL;
   const token = sessionStorage.getItem('adminToken');
 
-  // 1. Fetch default wallpapers & standard stats (Always working like original)
+  // 1. Fetch default wallpapers & standard stats
   useEffect(() => {
     const fetchWallpapers = async () => {
       try {
@@ -109,22 +109,30 @@ export default function AdminDashboard() {
   const activeLikes = filteredAnalytics ? filteredAnalytics.metrics.totalLikes : defaultTotalLikes;
   const activeLogs = filteredAnalytics ? filteredAnalytics.logs : [];
 
-  // Default or Filtered Chart Data
+  // Dynamic Chart Data based on filtered logs or default view
+  const chartLabels = activeLogs.length > 0 
+    ? activeLogs.slice(0, 7).reverse().map(log => new Date(log.createdAt).toLocaleDateString()) 
+    : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const chartValues = activeLogs.length > 0
+    ? activeLogs.slice(0, 7).reverse().map((_, idx) => idx + 1)
+    : [
+        Math.floor(activeViews * 0.1),
+        Math.floor(activeViews * 0.15),
+        Math.floor(activeViews * 0.12),
+        Math.floor(activeViews * 0.2),
+        Math.floor(activeViews * 0.18),
+        Math.floor(activeViews * 0.25),
+        activeViews
+      ];
+
   const chartData = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    labels: chartLabels,
     datasets: [
       {
         fill: true,
         label: 'Platform Traffic (Views)',
-        data: [
-          Math.floor(activeViews * 0.1),
-          Math.floor(activeViews * 0.15),
-          Math.floor(activeViews * 0.12),
-          Math.floor(activeViews * 0.2),
-          Math.floor(activeViews * 0.18),
-          Math.floor(activeViews * 0.25),
-          activeViews
-        ], 
+        data: chartValues, 
         borderColor: 'rgb(220, 38, 38)',
         backgroundColor: 'rgba(220, 38, 38, 0.2)',
         tension: 0.4,
@@ -175,7 +183,7 @@ export default function AdminDashboard() {
                  <TrendingUp className="text-red-500" /> PERFORMANCE ANALYTICS
                </h3>
                
-               {/* Custom Date Filter with Apply & Reset Buttons */}
+               {/* Custom Date Filter with Apply & Reset */}
                <div className="flex items-center gap-2 text-xs flex-wrap">
                  <input 
                    type="date" 
@@ -209,8 +217,7 @@ export default function AdminDashboard() {
            </div>
 
            <div className="h-52 w-full">
-             {/* If filter applied and zero logs found, show professional No Data message */}
-             {appliedStartDate && activeLogs.length === 0 && defaultTotalViews > 0 && activeViews === 0 ? (
+             {appliedStartDate && activeLogs.length === 0 ? (
                <div className="h-full flex flex-col items-center justify-center space-y-2">
                  <div className="p-3 rounded-xl bg-red-600/10 text-red-500">
                    <Database size={24} />
