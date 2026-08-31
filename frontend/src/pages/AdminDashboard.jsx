@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminDashboard.jsx
 
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Users, HardDrive, BarChart3, Eye, Download, Heart, FileImage } from 'lucide-react';
+import { TrendingUp, Users, HardDrive, BarChart3, Eye, Download, Heart, FileImage, Calendar, Database } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,6 +22,8 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 export default function AdminDashboard() {
   const [wallpapers, setWallpapers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -111,12 +113,45 @@ export default function AdminDashboard() {
 
       {/* Charts & Top Assets Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-card p-6 rounded-2xl h-80">
-           <h3 className="text-lg font-black brand-font mb-6 flex items-center gap-2 text-[var(--text-main)]">
-             <TrendingUp className="text-red-500" /> WEEKLY TRAFFIC REPORT
-           </h3>
+        <div className="glass-card p-6 rounded-2xl flex flex-col justify-between">
+           <div>
+             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6">
+               <h3 className="text-lg font-black brand-font flex items-center gap-2 text-[var(--text-main)]">
+                 <TrendingUp className="text-red-500" /> TRAFFIC & PERFORMANCE ANALYTICS
+               </h3>
+               {/* Custom Date Filter Inputs */}
+               <div className="flex items-center gap-2 text-xs">
+                 <input 
+                   type="date" 
+                   value={startDate} 
+                   onChange={e => setStartDate(e.target.value)} 
+                   className="theme-input px-2 py-1.5 rounded-lg font-bold text-xs" 
+                 />
+                 <span className="text-[var(--text-muted)] font-bold">to</span>
+                 <input 
+                   type="date" 
+                   value={endDate} 
+                   onChange={e => setEndDate(e.target.value)} 
+                   className="theme-input px-2 py-1.5 rounded-lg font-bold text-xs" 
+                 />
+               </div>
+             </div>
+           </div>
+
            <div className="h-52 w-full">
-             <Line data={chartData} options={chartOptions} />
+             {wallpapers.length > 0 ? (
+               <Line data={chartData} options={chartOptions} />
+             ) : (
+               <div className="h-full flex flex-col items-center justify-center space-y-2">
+                 <div className="p-3 rounded-xl bg-red-600/10 text-red-500">
+                   <Database size={24} />
+                 </div>
+                 <p className="text-xs font-black text-[var(--text-main)] uppercase tracking-wide">No Data Available</p>
+                 <p className="text-[11px] font-bold text-[var(--text-muted)] text-center">
+                   No activity logs or traffic records found for the selected date range.
+                 </p>
+               </div>
+             )}
            </div>
         </div>
         
@@ -129,7 +164,7 @@ export default function AdminDashboard() {
                  <img src={wp.url} alt={wp.name} className="w-16 h-12 object-cover rounded-lg shadow-md" />
                  <div className="flex-1 min-w-0">
                    <h4 className="font-bold text-sm truncate text-[var(--text-main)]">{wp.name}</h4>
-                   <p className="text-xs text-red-500 font-bold brand-font tracking-wider">{wp.wallpaperId}</p>
+                   <p className="text-xs text-red-500 font-black brand-font tracking-wider">{wp.wallpaperId}</p>
                  </div>
                  <div className="text-right shrink-0">
                    <div className="text-green-500 font-black text-sm flex items-center justify-end gap-1"><Download size={14}/> {wp.downloads}</div>
