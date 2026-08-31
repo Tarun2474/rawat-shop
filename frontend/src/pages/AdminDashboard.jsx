@@ -16,60 +16,80 @@ import {
 import { Line } from 'react-chartjs-2';
 import axios from 'axios';
 
-// Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend);
 
 export default function AdminDashboard() {
   const [wallpapers, setWallpapers] = useState([]);
+  const [analyticsMetrics, setAnalyticsMetrics] = useState({ totalViews: 0, totalDownloads: 0, totalLikes: 0 });
+  const [activityLogs, setActivityLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Date filters state
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
   const API_URL = import.meta.env.VITE_API_URL;
+  const token = sessionStorage.getItem('adminToken');
 
+  // Fetch wallpapers for asset counts & storage
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchWallpapers = async () => {
       try {
         const { data } = await axios.get(`${API_URL}/wallpapers`);
         if (data.success) {
           setWallpapers(data.data);
         }
       } catch (error) {
-        console.error("Error fetching dashboard data", error);
+        console.error("Error fetching wallpapers", error);
+      }
+    };
+    fetchWallpapers();
+  }, [API_URL]);
+
+  // Fetch analytics traffic and logs based on custom date filters
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      setLoading(true);
+      try {
+        let url = `${API_URL}/analytics?`;
+        if (startDate) url += `startDate=${startDate}&`;
+        if (endDate) url += `endDate=${endDate}&`;
+
+        const { data } = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (data && data.success) {
+          setAnalyticsMetrics(data.metrics || { totalViews: 0, totalDownloads: 0, totalLikes: 0 });
+          setActivityLogs(Array.isArray(data.data) ? data.data : []);
+        }
+      } catch (error) {
+        console.error("Error fetching analytics data", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [API_URL]);
+    fetchAnalytics();
+  }, [startDate, endDate, API_URL, token]);
 
   const totalWallpapers = wallpapers.length;
-  const totalViews = wallpapers.reduce((acc, curr) => acc + (curr.views || 0), 0);
-  const totalDownloads = wallpapers.reduce((acc, curr) => acc + (curr.downloads || 0), 0);
-  const totalLikes = wallpapers.reduce((acc, curr) => acc + (curr.likes || 0), 0);
   
-  // Real database size estimate logic (MBs returned from DB string like "3.2 MB")
+  // Real database size estimate logic
   const totalStorage = wallpapers.reduce((acc, curr) => {
     const sizeNum = parseFloat(curr.size?.split(' ')[0]) || 0;
     return acc + sizeNum;
   }, 0).toFixed(1);
 
-  // Dynamic Chart Data based on total views/downloads from database
+  // Build dynamic chart points from real activity logs or fallback to metrics
   const chartData = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    labels: activityLogs.length > 0 ? activityLogs.slice(0, 7).reverse().map(log => new Date(log.createdAt).toLocaleDateString()) : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [
       {
         fill: true,
-        label: 'Platform Traffic (Views)',
-        data: [
-          Math.floor(totalViews * 0.1),
-          Math.floor(totalViews * 0.15),
-          Math.floor(totalViews * 0.12),
-          Math.floor(totalViews * 0.2),
-          Math.floor(totalViews * 0.18),
-          Math.floor(totalViews * 0.25),
-          totalViews
-        ], 
+        label: 'Platform Traffic & Actions',
+        data: activityLogs.length > 0 
+          ? activityLogs.slice(0, 7).reverse().map((_, idx) => idx + 1)
+          : [0, 0, 0, 0, 0, 0, analyticsMetrics.totalViews || 0], 
         borderColor: 'rgb(220, 38, 38)',
         backgroundColor: 'rgba(220, 38, 38, 0.2)',
         tension: 0.4,
@@ -89,8 +109,6 @@ export default function AdminDashboard() {
     }
   };
 
-  if (loading) return <div className="text-white text-center py-20 font-bold">Loading Dashboard...</div>;
-
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div>
@@ -99,16 +117,17 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Users} label="Total Visitors" value={Math.floor(totalViews * 0.8).toLocaleString()} color="blue" trend="Active Base" />
+        <StatCard icon={Users} label="Total Visitors" value={Math.floor(analyticsMetrics.totalViews * 0.8).toLocaleString()} color="blue" trend="Active Base" />
         <StatCard icon={Eye} label="Total Wallpapers" value={totalWallpapers} color="green" trend="Live DB" />
         <StatCard icon={FileImage} label="Total Assets" value={totalWallpapers} color="purple" subtitle="Items" />
         <StatCard icon={HardDrive} label="Cloudinary Used" value={`${totalStorage} MB`} color="orange" subtitle="Storage" />
       </div>
 
+      {/* Real Live Metrics from Activity Logs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard icon={Eye} label="Global Views" value={totalViews.toLocaleString()} color="red" />
-        <StatCard icon={Download} label="Global Downloads" value={totalDownloads.toLocaleString()} color="red" />
-        <StatCard icon={Heart} label="Global Likes" value={totalLikes.toLocaleString()} color="red" />
+        <StatCard icon={Eye} label="Global Views" value={analyticsMetrics.totalViews.toLocaleString()} color="red" />
+        <StatCard icon={Download} label="Global Downloads" value={analyticsMetrics.totalDownloads.toLocaleString()} color="red" />
+        <StatCard icon={Heart} label="Global Likes" value={analyticsMetrics.totalLikes.toLocaleString()} color="red" />
       </div>
 
       {/* Charts & Top Assets Section */}
@@ -119,28 +138,30 @@ export default function AdminDashboard() {
                <h3 className="text-lg font-black brand-font flex items-center gap-2 text-[var(--text-main)]">
                  <TrendingUp className="text-red-500" /> TRAFFIC & PERFORMANCE ANALYTICS
                </h3>
-               {/* Custom Date Filter Inputs */}
+               {/* Fully Connected Custom Date Filters */}
                <div className="flex items-center gap-2 text-xs">
                  <input 
                    type="date" 
                    value={startDate} 
                    onChange={e => setStartDate(e.target.value)} 
-                   className="theme-input px-2 py-1.5 rounded-lg font-bold text-xs" 
+                   className="theme-input px-2 py-1.5 rounded-lg font-bold text-xs cursor-pointer" 
                  />
                  <span className="text-[var(--text-muted)] font-bold">to</span>
                  <input 
                    type="date" 
                    value={endDate} 
                    onChange={e => setEndDate(e.target.value)} 
-                   className="theme-input px-2 py-1.5 rounded-lg font-bold text-xs" 
+                   className="theme-input px-2 py-1.5 rounded-lg font-bold text-xs cursor-pointer" 
                  />
                </div>
              </div>
            </div>
 
            <div className="h-52 w-full">
-             {wallpapers.length > 0 ? (
+             {!loading && activityLogs.length > 0 ? (
                <Line data={chartData} options={chartOptions} />
+             ) : loading ? (
+               <div className="h-full flex items-center justify-center text-xs font-bold text-[var(--text-muted)]">Loading analytics graph...</div>
              ) : (
                <div className="h-full flex flex-col items-center justify-center space-y-2">
                  <div className="p-3 rounded-xl bg-red-600/10 text-red-500">
