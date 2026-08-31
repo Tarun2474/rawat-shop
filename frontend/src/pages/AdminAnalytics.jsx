@@ -39,7 +39,6 @@ export default function AdminAnalytics() {
     }
   };
 
-  // Fetch saved email on load
   const fetchReportEmail = async () => {
     try {
       const { data } = await axios.get(`${API_URL}/analytics/get-email`, {
@@ -88,21 +87,21 @@ export default function AdminAnalytics() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-black brand-font mb-1 text-[var(--text-main)]">WEBSITE <span className="text-red-500">ANALYTICS</span></h2>
-          <p className="text-[var(--text-muted)] font-bold">Live performance reports, custom day selection (Up to past 3 months), and Excel backups.</p>
+          <h2 className="text-3xl font-black mb-1 text-[var(--text-main)]">WEBSITE <span className="text-red-500">ANALYTICS</span></h2>
+          <p className="text-[var(--text-muted)] font-bold">Track real-time traffic, downloads, custom date reports, and Excel exports.</p>
         </div>
         <button 
           onClick={handleDownloadExcel}
           className="bg-green-600 hover:bg-green-500 text-white font-black px-6 py-3 rounded-xl flex items-center gap-2 shadow-[0_0_15px_rgba(22,163,74,0.4)] cursor-pointer uppercase text-xs tracking-wider"
         >
-          <Download size={18} /> Download 3-Month Excel
+          <Download size={18} /> Download Excel Report
         </button>
       </div>
 
       {/* Storage Protection Notice */}
       <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl flex items-center gap-3 text-amber-500 text-xs font-bold">
         <AlertCircle size={20} className="shrink-0" />
-        <span>Database Storage Protection Active: Analytics reports and activity logs are optimized for the past 3 months to prevent MongoDB storage overflow on free tier.</span>
+        <span>Database Storage Protection Active: Reports and logs are optimized for the past 3 months to prevent MongoDB storage overflow.</span>
       </div>
 
       {/* Dynamic Email Configuration Card */}
@@ -131,12 +130,12 @@ export default function AdminAnalytics() {
         </div>
       </div>
 
-      {/* Live / Individual Metrics Summary Cards */}
+      {/* Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="glass-card p-5 rounded-2xl border border-[var(--glass-border)] flex items-center gap-4">
           <div className="p-4 rounded-xl bg-blue-600/10 text-blue-500"><Eye size={24} /></div>
           <div>
-            <p className="text-xs font-black text-[var(--text-muted)] uppercase">Traffic (Views)</p>
+            <p className="text-xs font-black text-[var(--text-muted)] uppercase">Total Views</p>
             <h3 className="text-2xl font-black text-[var(--text-main)]">{report.metrics.totalViews}</h3>
           </div>
         </div>
@@ -144,7 +143,7 @@ export default function AdminAnalytics() {
         <div className="glass-card p-5 rounded-2xl border border-[var(--glass-border)] flex items-center gap-4">
           <div className="p-4 rounded-xl bg-green-600/10 text-green-500"><Download size={24} /></div>
           <div>
-            <p className="text-xs font-black text-[var(--text-muted)] uppercase">Downloads</p>
+            <p className="text-xs font-black text-[var(--text-muted)] uppercase">Total Downloads</p>
             <h3 className="text-2xl font-black text-[var(--text-main)]">{report.metrics.totalDownloads}</h3>
           </div>
         </div>
@@ -152,7 +151,7 @@ export default function AdminAnalytics() {
         <div className="glass-card p-5 rounded-2xl border border-[var(--glass-border)] flex items-center gap-4">
           <div className="p-4 rounded-xl bg-red-600/10 text-red-500"><Heart size={24} /></div>
           <div>
-            <p className="text-xs font-black text-[var(--text-muted)] uppercase">Likes</p>
+            <p className="text-xs font-black text-[var(--text-muted)] uppercase">Total Likes</p>
             <h3 className="text-2xl font-black text-[var(--text-main)]">{report.metrics.totalLikes}</h3>
           </div>
         </div>
@@ -174,8 +173,8 @@ export default function AdminAnalytics() {
         <div className="flex items-center gap-2">
           <Filter size={16} className="text-[var(--text-muted)]" />
           <select value={actionFilter} onChange={e => setActionFilter(e.target.value)} className="theme-input px-4 py-2 rounded-xl text-xs font-bold uppercase cursor-pointer">
-            <option value="">All Combined (Live)</option>
-            <option value="view">Traffic (Views) Only</option>
+            <option value="">All Actions</option>
+            <option value="view">Views Only</option>
             <option value="download">Downloads Only</option>
             <option value="like">Likes Only</option>
           </select>
@@ -201,7 +200,7 @@ export default function AdminAnalytics() {
               ) : report.data && report.data.length > 0 ? (
                 report.data.map(log => (
                   <tr key={log._id} className="hover:bg-[var(--input-bg)] transition-colors">
-                    <td className="p-4 text-red-500 font-black brand-font text-xs">{log.wallpaperId?.wallpaperId || 'N/A'}</td>
+                    <td className="p-4 text-red-500 font-black text-xs">{log.wallpaperId?.wallpaperId || 'N/A'}</td>
                     <td className="p-4 font-bold text-sm text-[var(--text-main)]">{log.wallpaperId?.name || 'Deleted Asset'}</td>
                     <td className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase">{log.wallpaperId?.category || 'N/A'}</td>
                     <td className="p-4">
