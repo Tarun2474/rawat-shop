@@ -14,7 +14,7 @@ const SUB_CATEGORIES = [
   'Dark', 'AMOLED', 'Neon', 'Sci-Fi', 'Superheroes', 'Marvel', 'DC', 'Minimal', 'Abstract'
 ];
 
-const ITEMS_PER_PAGE = 15;
+const ITEMS_PER_PAGE = 15; // 3 columns × 5 rows = 15 wallpapers per page
 
 export default function Home() {
   const [wallpapers, setWallpapers] = useState([]);
@@ -26,16 +26,15 @@ export default function Home() {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Preview Modal State
+  // State for Full-Screen Preview Modal
   const [previewWallpaper, setPreviewWallpaper] = useState(null);
 
-  // Cover Flow Interaction Refs & State (Exactly 5 Wallpapers)
+  // Cover Flow Interaction Refs & State
   const coverflowCardsRef = useRef([]);
   const [cfPosition, setCfPosition] = useState(0);
   const coverflowContainerRef = useRef(null);
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
-  const dragStartPosRef = useRef(0);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -56,7 +55,7 @@ export default function Home() {
     fetchWallpapers();
   }, [API_URL]);
 
-  // Handle URL wallpaper query parameter preview
+  // Automatically open preview modal if URL has ?wallpaper=WLP001
   useEffect(() => {
     if (wallpapers.length > 0) {
       const params = new URLSearchParams(window.location.search);
@@ -76,10 +75,12 @@ export default function Home() {
     }
   }, [wallpapers]);
 
+  // Reset to page 1 whenever search query or categories change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, activeMainCat, activeSubCat]);
 
+  // Update stats locally in state when user clicks view/like/download
   const handleUpdateStats = (id, action) => {
     setWallpapers(prevWallpapers => 
       prevWallpapers.map(wp => {
@@ -94,7 +95,7 @@ export default function Home() {
     );
   };
 
-  // Filter Logic
+  // Filter logic
   const filteredWallpapers = useMemo(() => {
     return wallpapers.filter(w => {
       const q = searchQuery.toLowerCase();
@@ -105,6 +106,7 @@ export default function Home() {
     });
   }, [wallpapers, searchQuery, activeMainCat, activeSubCat]);
 
+  // Pagination Logic
   const totalPages = Math.ceil(filteredWallpapers.length / ITEMS_PER_PAGE);
   const currentWallpapers = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -112,37 +114,33 @@ export default function Home() {
   }, [filteredWallpapers, currentPage]);
 
   // ==========================================
-  // DYNAMIC COVER FLOW (EXACT 5 WALLPAPERS)
+  // DYNAMIC COVER FLOW ITEMS (Admin Controlled, Max 5)
   // ==========================================
-  // Takes the first 5 wallpapers from the database so admin changes reflect instantly
   const coverflowItems = useMemo(() => {
-    if (wallpapers.length > 0) {
-      return wallpapers.slice(0, 5);
+    const adminSelected = wallpapers.filter(w => w.isCoverFlow);
+    if (adminSelected.length > 0) {
+      return adminSelected.slice(0, 5);
     }
-    // Fallback placeholder items if DB is empty
-    return [
-      { _id: '1', wallpaperId: 'WLP001', name: 'Placeholder 1', url: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=900&q=90' },
-      { _id: '2', wallpaperId: 'WLP002', name: 'Placeholder 2', url: 'https://images.unsplash.com/photo-1534791547706-68c6c8c6f1c7?auto=format&fit=crop&w=900&q=90' },
-      { _id: '3', wallpaperId: 'WLP003', name: 'Placeholder 3', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=900&q=90' },
-      { _id: '4', wallpaperId: 'WLP004', name: 'Placeholder 4', url: 'https://images.unsplash.com/photo-1497250681960-ef046c08a56e?auto=format&fit=crop&w=900&q=90' },
-      { _id: '5', wallpaperId: 'WLP005', name: 'Placeholder 5', url: 'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=90' },
-    ];
+    // Fallback to first 5 wallpapers if none selected by admin yet
+    return wallpapers.slice(0, 5);
   }, [wallpapers]);
 
   const totalCfCards = coverflowItems.length;
 
   const nextCfCard = () => {
+    if (totalCfCards === 0) return;
     setCfPosition(prev => (prev + 1) % totalCfCards);
   };
 
   const prevCfCard = () => {
+    if (totalCfCards === 0) return;
     setCfPosition(prev => (prev - 1 + totalCfCards) % totalCfCards);
   };
 
   // Smooth 3D Positioning Effect for Cover Flow Cards
   useEffect(() => {
     const cardElements = coverflowCardsRef.current;
-    if (!cardElements.length) return;
+    if (!cardElements.length || totalCfCards === 0) return;
 
     const getCardWidth = () => cardElements[0]?.getBoundingClientRect().width || 180;
     const getSpacing = () => {
@@ -152,7 +150,6 @@ export default function Home() {
       return getCardWidth() * 0.55;
     };
 
-    const cardWidth = getCardWidth();
     const spacing = getSpacing();
 
     cardElements.forEach((card, index) => {
@@ -189,7 +186,7 @@ export default function Home() {
     });
   }, [cfPosition, totalCfCards, coverflowItems]);
 
-  // Touch Swipe Handlers for Cover Flow Container
+  // Touch & Mouse Swipe Handlers
   const handlePointerDown = (e) => {
     isDraggingRef.current = true;
     startXRef.current = e.clientX || (e.touches && e.touches[0].clientX) || 0;
@@ -247,56 +244,58 @@ export default function Home() {
           </div>
 
           {/* =====================================================
-               FIXED 5-CARD COVER FLOW SECTION (Fully Responsive & Swipeable)
+               COVER FLOW CAROUSEL (With Clean Chevron Icons)
           ===================================================== */}
-          <div className="relative w-full max-w-3xl mt-2 flex items-center justify-center px-8 md:px-12">
-            {/* Left Button */}
-            <button 
-              onClick={prevCfCard}
-              className="absolute left-0 z-50 w-10 h-10 md:w-12 md:h-12 rounded-full bg-neutral-900 border border-neutral-700 text-white text-2xl flex items-center justify-center hover:bg-[#e50914] hover:border-[#e50914] transition-all shadow-[0_4px_15px_rgba(0,0,0,0.6)] cursor-pointer"
-              aria-label="Previous"
-            >
-              &#139;
-            </button>
+          {coverflowItems.length > 0 && (
+            <div className="relative w-full max-w-3xl mt-2 flex items-center justify-center px-8 md:px-12">
+              {/* Left Arrow Button */}
+              <button 
+                onClick={prevCfCard}
+                className="absolute left-0 z-50 w-10 h-10 md:w-12 md:h-12 rounded-full bg-neutral-900 border border-neutral-700 text-white flex items-center justify-center hover:bg-[#e50914] hover:border-[#e50914] transition-all shadow-[0_4px_15px_rgba(0,0,0,0.6)] cursor-pointer"
+                aria-label="Previous Wallpaper"
+              >
+                <ChevronLeft size={24} />
+              </button>
 
-            {/* Coverflow Window (Expanded height to prevent cutting top/bottom) */}
-            <div 
-              className="w-full h-[340px] sm:h-[390px] relative overflow-hidden select-none touch-pan-y"
-              ref={coverflowContainerRef}
-              onMouseDown={handlePointerDown}
-              onMouseMove={handlePointerMove}
-              onMouseUp={handlePointerUp}
-              onTouchStart={handlePointerDown}
-              onTouchMove={handlePointerMove}
-              onTouchEnd={handlePointerUp}
-            >
-              <div className="absolute inset-0 pointer-events-none">
-                {coverflowItems.map((item, index) => (
-                  <div 
-                    key={item._id || item.wallpaperId}
-                    ref={el => coverflowCardsRef.current[index] = el}
-                    onClick={() => setCfPosition(index)}
-                    className="absolute left-1/2 top-1/2 -translate-y-1/2 w-[160px] sm:w-[210px] h-[280px] sm:h-[340px] rounded-2xl overflow-hidden cursor-pointer pointer-events-auto bg-[#111] shadow-[0_25px_50px_rgba(0,0,0,0.7)] border border-white/10 transition-transform duration-500 ease-out"
-                    style={{ transformOrigin: 'center center' }}
-                  >
-                    <img src={item.url} alt={item.name} className="w-full h-full object-cover pointer-events-none select-none" draggable="false" />
-                    <div className="absolute left-3 bottom-3 py-1.5 px-3 rounded-lg bg-[#e50914] text-white text-xs font-black tracking-wider shadow-lg">
-                      {item.wallpaperId}
+              {/* Coverflow Window */}
+              <div 
+                className="w-full h-[340px] sm:h-[390px] relative overflow-hidden select-none touch-pan-y"
+                ref={coverflowContainerRef}
+                onMouseDown={handlePointerDown}
+                onMouseMove={handlePointerMove}
+                onMouseUp={handlePointerUp}
+                onTouchStart={handlePointerDown}
+                onTouchMove={handlePointerMove}
+                onTouchEnd={handlePointerUp}
+              >
+                <div className="absolute inset-0 pointer-events-none">
+                  {coverflowItems.map((item, index) => (
+                    <div 
+                      key={item._id || item.wallpaperId}
+                      ref={el => coverflowCardsRef.current[index] = el}
+                      onClick={() => setCfPosition(index)}
+                      className="absolute left-1/2 top-1/2 -translate-y-1/2 w-[160px] sm:w-[210px] h-[280px] sm:h-[340px] rounded-2xl overflow-hidden cursor-pointer pointer-events-auto bg-[#111] shadow-[0_25px_50px_rgba(0,0,0,0.7)] border border-white/10 transition-transform duration-500 ease-out"
+                      style={{ transformOrigin: 'center center' }}
+                    >
+                      <img src={item.url} alt={item.name} className="w-full h-full object-cover pointer-events-none select-none" draggable="false" />
+                      <div className="absolute left-3 bottom-3 py-1.5 px-3 rounded-lg bg-[#e50914] text-white text-xs font-black tracking-wider shadow-lg">
+                        {item.wallpaperId}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Right Button */}
-            <button 
-              onClick={nextCfCard}
-              className="absolute right-0 z-50 w-10 h-10 md:w-12 md:h-12 rounded-full bg-neutral-900 border border-neutral-700 text-white text-2xl flex items-center justify-center hover:bg-[#e50914] hover:border-[#e50914] transition-all shadow-[0_4px_15px_rgba(0,0,0,0.6)] cursor-pointer"
-              aria-label="Next"
-            >
-              &#155;
-            </button>
-          </div>
+              {/* Right Arrow Button */}
+              <button 
+                onClick={nextCfCard}
+                className="absolute right-0 z-50 w-10 h-10 md:w-12 md:h-12 rounded-full bg-neutral-900 border border-neutral-700 text-white flex items-center justify-center hover:bg-[#e50914] hover:border-[#e50914] transition-all shadow-[0_4px_15px_rgba(0,0,0,0.6)] cursor-pointer"
+                aria-label="Next Wallpaper"
+              >
+                <ChevronRight size={24} />
+              </button>
+            </div>
+          )}
 
         </div>
       </div>
