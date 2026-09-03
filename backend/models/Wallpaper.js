@@ -52,6 +52,10 @@ const wallpaperSchema = new mongoose.Schema({
   size: {
     type: String, // e.g., '3.2 MB'
     default: '0 MB'
+  },
+  isCoverFlow: {
+    type: Boolean,
+    default: false // Admin can toggle this to show wallpaper in the Cover Flow carousel
   }
 }, { timestamps: true });
 
