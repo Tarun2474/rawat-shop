@@ -244,7 +244,7 @@ export default function Home() {
           </div>
 
           {/* =====================================================
-               COVER FLOW CAROUSEL (With Clean Chevron Icons)
+               COVER FLOW CAROUSEL (Click to Open Preview Modal)
           ===================================================== */}
           {coverflowItems.length > 0 && (
             <div className="relative w-full max-w-3xl mt-2 flex items-center justify-center px-8 md:px-12">
@@ -273,13 +273,23 @@ export default function Home() {
                     <div 
                       key={item._id || item.wallpaperId}
                       ref={el => coverflowCardsRef.current[index] = el}
-                      onClick={() => setCfPosition(index)}
-                      className="absolute left-1/2 top-1/2 -translate-y-1/2 w-[160px] sm:w-[210px] h-[280px] sm:h-[340px] rounded-2xl overflow-hidden cursor-pointer pointer-events-auto bg-[#111] shadow-[0_25px_50px_rgba(0,0,0,0.7)] border border-white/10 transition-transform duration-500 ease-out"
+                      onClick={() => {
+                        // If it's the center active card, open preview modal. Otherwise rotate to center.
+                        if (Math.abs(index - cfPosition) < 0.001 || index === cfPosition) {
+                          setPreviewWallpaper(item);
+                        } else {
+                          setCfPosition(index);
+                        }
+                      }}
+                      className="absolute left-1/2 top-1/2 -translate-y-1/2 w-[160px] sm:w-[210px] h-[280px] sm:h-[340px] rounded-2xl overflow-hidden cursor-pointer pointer-events-auto bg-[#111] shadow-[0_25px_50px_rgba(0,0,0,0.7)] border border-white/10 transition-transform duration-500 ease-out group"
                       style={{ transformOrigin: 'center center' }}
                     >
-                      <img src={item.url} alt={item.name} className="w-full h-full object-cover pointer-events-none select-none" draggable="false" />
+                      <img src={item.url} alt={item.name} className="w-full h-full object-cover pointer-events-none select-none group-hover:scale-105 transition-transform duration-300" draggable="false" />
                       <div className="absolute left-3 bottom-3 py-1.5 px-3 rounded-lg bg-[#e50914] text-white text-xs font-black tracking-wider shadow-lg">
                         {item.wallpaperId}
+                      </div>
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="bg-black/70 text-white text-[10px] font-bold px-2.5 py-1 rounded-full border border-white/20">Click to Preview</span>
                       </div>
                     </div>
                   ))}
