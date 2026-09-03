@@ -12,6 +12,7 @@ export default function AdminManage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingWp, setEditingWp] = useState(null);
   const [newImageFile, setNewImageFile] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]); // Multiple selection for batch actions
   const [loading, setLoading] = useState(true);
 
   const API_URL = import.meta.env.VITE_API_URL;
@@ -39,6 +40,7 @@ export default function AdminManage() {
           headers: { Authorization: `Bearer ${token}` }
         });
         setWallpapers(wallpapers.filter(w => w._id !== id));
+        setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
       } catch (err) {
         alert("Failed to delete wallpaper");
       }
@@ -68,6 +70,13 @@ export default function AdminManage() {
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     try {
+      // Check Max 5 Cover Flow Limit
+      const activeCount = wallpapers.filter(w => w.isCoverFlow && w._id !== editingWp._id).length;
+      if (editingWp.isCoverFlow && activeCount >= 5) {
+        alert("Cover Flow can hold maximum 5 wallpapers! Please remove one from active carousel first.");
+        return;
+      }
+
       const formData = new FormData();
       formData.append('name', editingWp.name);
       formData.append('mainCategory', JSON.stringify(editingWp.mainCategory));
@@ -75,7 +84,7 @@ export default function AdminManage() {
       formData.append('views', editingWp.views || 0);
       formData.append('downloads', editingWp.downloads || 0);
       formData.append('likes', editingWp.likes || 0);
-      formData.append('isCoverFlow', editingWp.isCoverFlow ? 'true' : 'false'); // Fix: sending boolean correctly
+      formData.append('isCoverFlow', editingWp.isCoverFlow ? 'true' : 'false');
 
       if (newImageFile) {
         formData.append('image', newImageFile);
@@ -96,12 +105,55 @@ export default function AdminManage() {
     }
   };
 
+  // Multiple selection handlers
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filtered.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filtered.map(w => w._id));
+    }
+  };
+
+  const toggleSelectOne = (id) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter(i => i !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
+
+  // Batch remove from Cover Flow for selected items
+  const handleBatchRemoveCoverFlow = async () => {
+    if (selectedIds.length === 0) return;
+    try {
+      await Promise.all(
+        selectedIds.map(async (id) => {
+          const wp = wallpapers.find(w => w._id === id);
+          if (wp && wp.isCoverFlow) {
+            const formData = new FormData();
+            formData.append('name', wp.name);
+            formData.append('mainCategory', JSON.stringify(wp.mainCategory));
+            formData.append('category', wp.category);
+            formData.append('isCoverFlow', 'false');
+            return axios.put(`${API_URL}/wallpapers/${id}`, formData, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+          }
+        })
+      );
+      fetchWallpapers();
+      setSelectedIds([]);
+      alert("Selected items removed from Cover Flow!");
+    } catch (err) {
+      alert("Failed to update selected items");
+    }
+  };
+
   const filtered = wallpapers.filter(w => 
     w.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     w.wallpaperId.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Current active Cover Flow items list for the top preview strip
   const activeCoverFlowItems = wallpapers.filter(w => w.isCoverFlow);
 
   return (
@@ -199,7 +251,7 @@ export default function AdminManage() {
                     }`}
                   >
                     {editingWp.isCoverFlow ? <CheckSquare size={16} /> : <Square size={16} />}
-                    <span className="uppercase tracking-wider">Show in Homepage Cover Flow Carousel</span>
+                    <span className="uppercase tracking-wider">Show in Homepage Cover Flow Carousel (Max 5)</span>
                   </button>
                 </div>
                 
@@ -214,7 +266,7 @@ export default function AdminManage() {
       <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 mb-4">
         <div>
           <h2 className="text-3xl font-black brand-font mb-1 text-[var(--text-main)]">DATABASE <span className="text-red-500">RECORDS</span></h2>
-          <p className="text-[var(--text-muted)] font-bold">Manage wallpapers, cover flow items, and view full upload history.</p>
+          <p className="text-[var(--text-muted)] font-bold">Manage wallpapers, cover flow items (Max 5), and view full upload history.</p>
         </div>
         
         <div className="relative w-full md:w-80">
@@ -224,13 +276,13 @@ export default function AdminManage() {
         </div>
       </div>
 
-      {/* 🌟 LIVE COVER FLOW PREVIEW STRIP (Added right below search bar as requested) */}
+      {/* 🌟 LIVE COVER FLOW PREVIEW STRIP WITH QUICK REMOVE */}
       <div className="glass-card p-4 rounded-2xl border border-red-500/30 mb-6 shadow-lg">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-black text-[var(--text-main)] flex items-center gap-2 uppercase tracking-wider">
-            <Flame className="text-red-500" size={18} /> Current Live Cover Flow Cards ({activeCoverFlowItems.length}/5)
+            <Flame className="text-red-500" size={18} /> Active Cover Flow Cards ({activeCoverFlowItems.length}/5)
           </h3>
-          <span className="text-xs text-[var(--text-muted)] font-bold">Edit any wallpaper below to add/remove from cover flow</span>
+          <span className="text-xs text-[var(--text-muted)] font-bold">Strict limit: 5 Wallpapers max. Click 'X' to instantly remove.</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
@@ -240,12 +292,38 @@ export default function AdminManage() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2">
                 <div>
                   <p className="text-white text-xs font-black">{wp.wallpaperId}</p>
-                  <p className="text-[10px] text-gray-300 truncate max-w-[100px]">{wp.name}</p>
+                  <p className="text-[10px] text-gray-300 truncate max-w-[90px]">{wp.name}</p>
                 </div>
               </div>
-              <span className="absolute top-1 right-1 bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">
-                ACTIVE
+              <span className="absolute top-1 left-1 bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">
+                CF
               </span>
+              {/* Quick Remove from Cover Flow Button */}
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const formData = new FormData();
+                    formData.append('name', wp.name);
+                    formData.append('mainCategory', JSON.stringify(wp.mainCategory));
+                    formData.append('category', wp.category);
+                    formData.append('isCoverFlow', 'false');
+                    await axios.put(`${API_URL}/wallpapers/${wp._id}`, formData, {
+                      headers: { 
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data'
+                      }
+                    });
+                    fetchWallpapers();
+                  } catch (err) {
+                    alert("Failed to remove from Cover Flow");
+                  }
+                }}
+                className="absolute top-1 right-1 bg-neutral-900/90 hover:bg-red-600 text-white p-1 rounded-full shadow transition-colors cursor-pointer"
+                title="Remove from Cover Flow"
+              >
+                <XCircle size={14} />
+              </button>
             </div>
           ))}
           {activeCoverFlowItems.length === 0 && (
@@ -256,11 +334,32 @@ export default function AdminManage() {
         </div>
       </div>
 
+      {/* Batch Actions Bar for Multiple Selection */}
+      {selectedIds.length > 0 && (
+        <div className="glass-card p-3 rounded-xl border border-red-500/40 flex items-center justify-between">
+          <span className="text-xs font-bold text-[var(--text-main)] ml-2">{selectedIds.length} items selected</span>
+          <button
+            onClick={handleBatchRemoveCoverFlow}
+            className="bg-red-600 hover:bg-red-700 text-white text-xs font-black px-4 py-2 rounded-lg transition-all shadow cursor-pointer uppercase tracking-wider"
+          >
+            Remove Selected from Cover Flow
+          </button>
+        </div>
+      )}
+
       <div className="glass-card rounded-2xl overflow-hidden border border-[var(--glass-border)] shadow-xl">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
               <tr className="border-b border-[var(--glass-border)] bg-[var(--input-bg)]">
+                <th className="p-5 w-12 text-center">
+                  <input 
+                    type="checkbox" 
+                    onChange={toggleSelectAll} 
+                    checked={filtered.length > 0 && selectedIds.length === filtered.length}
+                    className="accent-red-600 cursor-pointer w-4 h-4"
+                  />
+                </th>
                 <th className="p-5 text-xs font-black text-[var(--text-muted)] uppercase tracking-widest">Asset Preview</th>
                 <th className="p-5 text-xs font-black text-[var(--text-muted)] uppercase tracking-widest">Metadata</th>
                 <th className="p-5 text-xs font-black text-[var(--text-muted)] uppercase tracking-widest">History Logs & Likes</th>
@@ -269,9 +368,17 @@ export default function AdminManage() {
             </thead>
             <tbody className="divide-y divide-[var(--glass-border)]">
               {loading ? (
-                <tr><td colSpan="4" className="p-10 text-center text-[var(--text-main)] font-bold">Loading Database...</td></tr>
+                <tr><td colSpan="5" className="p-10 text-center text-[var(--text-main)] font-bold">Loading Database...</td></tr>
               ) : filtered.map(wp => (
                 <tr key={wp._id} className="hover:bg-[var(--input-bgy)] transition-colors group">
+                  <td className="p-5 text-center">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedIds.includes(wp._id)}
+                      onChange={() => toggleSelectOne(wp._id)}
+                      className="accent-red-600 cursor-pointer w-4 h-4"
+                    />
+                  </td>
                   <td className="p-5 w-24">
                     <div className="w-24 h-16 rounded-lg overflow-hidden border border-[var(--glass-border)] group-hover:border-red-500/50 shadow-md relative">
                       <img src={wp.url} alt={wp.name} className="w-full h-full object-cover" loading="lazy"/>
@@ -319,7 +426,7 @@ export default function AdminManage() {
                 </tr>
               ))}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan="4" className="p-10 text-center text-[var(--text-muted)] font-bold">No assets found matching your search.</td></tr>
+                <tr><td colSpan="5" className="p-10 text-center text-[var(--text-muted)] font-bold">No assets found matching your search.</td></tr>
               )}
             </tbody>
           </table>
