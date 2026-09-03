@@ -17,19 +17,19 @@ export default function Navbar() {
   return (
     <>
       <nav className="glass sticky top-0 z-50 px-6 py-3 flex justify-between items-center transition-colors border-b border-[var(--glass-border)]">
-        {/* Logo Image + Brand Name */}
-        <Link to="/" className="flex items-center gap-3 cursor-pointer group">
-          <div className="w-10 h-10 rounded-full overflow-hidden border border-red-500/50 shadow-[0_0_15px_rgba(220,38,38,0.6)] group-hover:scale-105 transition-transform bg-neutral-900 flex items-center justify-center">
-            <img 
-              src={logoImg} 
-              alt="Rawat Shop Logo" 
-              className="w-full h-full object-cover scale-[1.7]"
-            />
-          </div>
-          <span className="brand-font text-2xl font-black tracking-widest text-[var(--text-main)] group-hover:text-red-500 transition-colors">
-            RAWAT<span className="text-red-600">SHOP</span>
-          </span>
-        </Link>
+       {/* Logo Image + Brand Name */}
+<Link to="/" className="flex items-center gap-3 cursor-pointer group">
+  <div className="w-10 h-10 flex items-center justify-center group-hover:scale-105 transition-transform">
+    <img 
+      src={logoImg} 
+      alt="Rawat Shop Logo" 
+      className="w-full h-full object-contain"
+    />
+  </div>
+  <span className="brand-font text-2xl font-black tracking-widest text-[var(--text-main)] group-hover:text-red-500 transition-colors">
+    RAWAT<span className="text-red-600">SHOP</span>
+  </span>
+</Link>
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
