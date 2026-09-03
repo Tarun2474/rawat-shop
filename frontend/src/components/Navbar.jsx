@@ -23,7 +23,7 @@ export default function Navbar() {
             <img 
               src={logoImg} 
               alt="Rawat Shop Logo" 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover scale-[1.7]"
             />
           </div>
           <span className="brand-font text-2xl font-black tracking-widest text-[var(--text-main)] group-hover:text-red-500 transition-colors">
