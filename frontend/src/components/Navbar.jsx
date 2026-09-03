@@ -19,8 +19,13 @@ export default function Navbar() {
       <nav className="glass sticky top-0 z-50 px-6 py-4 flex justify-between items-center transition-colors border-b border-[var(--glass-border)]">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 cursor-pointer group">
-          <div className="w-10 h-10 bg-red-600 flex items-center justify-center rounded-lg rotate-45 group-hover:rotate-90 transition-transform duration-500 shadow-[0_0_15px_rgba(220,38,38,0.6)]">
-            <div className={`w-6 h-6 border-2 ${theme === 'dark' ? 'border-black' : 'border-white'} -rotate-45 group-hover:-rotate-90 transition-transform duration-500`} />
+          {/* 🌟 Custom Image Logo */}
+          <div className="w-10 h-10 flex items-center justify-center overflow-hidden rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.6)] group-hover:scale-105 transition-transform">
+            <img 
+              src="/path-to-your-logo/logo.png"  // Yahan apni logo image ka path ya URL daal de
+              alt="Rawat Shop Logo" 
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className="brand-font text-2xl font-black tracking-widest text-[var(--text-main)] group-hover:text-red-500 transition-colors">
             RAWAT<span className="text-red-600">SHOP</span>
