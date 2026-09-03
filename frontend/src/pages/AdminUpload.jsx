@@ -6,7 +6,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const MAIN_CATEGORIES = ['Latest', 'Premium', 'Mobile Wallpapers', 'Laptop Wallpapers', 'Tablet Wallpapers'];
-const SUB_CATEGORIES = ['Gaming', 'Anime', 'Nature', 'Cars', 'Bikes', 'Technology', 'Superheroes', 'Marvel', 'DC', 'Movies', 'Space', 'Abstract', 'Dark', 'AMOLED', 'Minimal', 'Sports', 'Fantasy', 'Sci-Fi'];
+const SUB_CATEGORIES = ['Gods', 'Gaming', 'Anime', 'Nature', 'Cars', 'Bikes', 'Technology', 'Superheroes', 'Marvel', 'DC', 'Movies', 'Space', 'Abstract', 'Dark', 'AMOLED', 'Minimal', 'Sports', 'Fantasy', 'Sci-Fi'];
 
 export default function AdminUpload() {
   const [name, setName] = useState('');
@@ -14,6 +14,7 @@ export default function AdminUpload() {
   const [selectedMainCategories, setSelectedMainCategories] = useState(['Latest']);
   const [category, setCategory] = useState(SUB_CATEGORIES[0]);
   const [resolution, setResolution] = useState('Original 4K');
+  const [isCoverFlow, setIsCoverFlow] = useState(false); // Cover Flow Checkbox State
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -36,12 +37,10 @@ export default function AdminUpload() {
   // Checkbox toggle handler for multiple main categories
   const toggleMainCategory = (cat) => {
     if (selectedMainCategories.includes(cat)) {
-      // Agar pehle se selected hai aur kam se kam ek bacha hai toh hata do
       if (selectedMainCategories.length > 1) {
         setSelectedMainCategories(selectedMainCategories.filter(c => c !== cat));
       }
     } else {
-      // Naya add kar do
       setSelectedMainCategories([...selectedMainCategories, cat]);
     }
   };
@@ -59,10 +58,10 @@ export default function AdminUpload() {
 
     const formData = new FormData();
     formData.append('name', name);
-    // Saari selected categories ko comma-separated ya JSON string bhej rahe hain
     formData.append('mainCategory', JSON.stringify(selectedMainCategories));
     formData.append('category', category);
     formData.append('resolution', resolution);
+    formData.append('isCoverFlow', isCoverFlow); // Sending Cover Flow status to backend
     formData.append('image', imageFile);
 
     try {
@@ -73,7 +72,7 @@ export default function AdminUpload() {
         },
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted); // Live progress update
+          setUploadProgress(percentCompleted);
         }
       });
 
@@ -162,7 +161,7 @@ export default function AdminUpload() {
               </div>
 
               <div>
-                <label className="block text-[var(--text-muted)] text-xs font-black uppercase tracking-wider mb-2">Sub Category</label>
+                <label className="block text-[var(--text-muted)] text-xs font-black uppercase tracking-wider mb-2">Sub Category (Includes Gods)</label>
                 <select value={category} onChange={e => setCategory(e.target.value)}
                   className="w-full theme-input rounded-xl py-3.5 px-4 focus:outline-none focus:border-red-500 transition-all font-bold appearance-none">
                   {SUB_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -175,6 +174,23 @@ export default function AdminUpload() {
                   className="w-full theme-input rounded-xl py-3.5 px-4 focus:outline-none focus:border-red-500 transition-all font-bold"
                   placeholder="e.g. Original 4K, 1080p" />
               </div>
+
+              {/* 🌟 Add to Cover Flow Checkbox */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCoverFlow(!isCoverFlow)}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-xs transition-all border cursor-pointer w-full ${
+                    isCoverFlow 
+                      ? 'bg-red-600 text-white border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.4)]' 
+                      : 'theme-input text-[var(--text-muted)] border-[var(--glass-border)] hover:text-[var(--text-main)]'
+                  }`}
+                >
+                  {isCoverFlow ? <CheckSquare size={18} /> : <Square size={18} />}
+                  <span className="uppercase tracking-wider">Add to Homepage Cover Flow Carousel</span>
+                </button>
+              </div>
+
             </div>
           </div>
 
