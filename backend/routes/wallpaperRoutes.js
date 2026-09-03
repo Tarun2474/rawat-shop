@@ -19,7 +19,7 @@ router.patch('/:id/stats', updateStats);
 
 // Protected Admin Routes
 router.post('/', protect, uploadImage, createWallpaper);
-router.put('/:id', protect, updateWallpaper);
+router.put('/:id', protect, uploadImage, updateWallpaper);
 router.delete('/:id', protect, deleteWallpaper);
 
 // PATCH: Toggle Cover Flow status (Admin Only)
