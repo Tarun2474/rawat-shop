@@ -19,14 +19,12 @@ const generateWallpaperId = async () => {
 // @access  Private
 const createWallpaper = async (req, res) => {
   try {
-    // req.file comes from Cloudinary multer middleware
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No image file uploaded' });
     }
 
-    let { name, mainCategory, category, resolution } = req.body;
+    let { name, mainCategory, category, resolution, isCoverFlow } = req.body;
     
-    // Parse mainCategory if it comes as a JSON string from FormData
     if (typeof mainCategory === 'string') {
       try {
         mainCategory = JSON.parse(mainCategory);
@@ -35,10 +33,7 @@ const createWallpaper = async (req, res) => {
       }
     }
 
-    // Auto Generate ID
     const nextId = await generateWallpaperId();
-
-    // Get file size in MB
     const sizeInMB = (req.file.size / (1024 * 1024)).toFixed(2) + ' MB';
 
     const newWallpaper = await Wallpaper.create({
@@ -47,9 +42,10 @@ const createWallpaper = async (req, res) => {
       mainCategory,
       category,
       url: req.file.path,
-      publicId: req.file.filename, // Cloudinary unique public_id
+      publicId: req.file.filename,
       resolution: resolution || 'Original HD',
-      size: sizeInMB
+      size: sizeInMB,
+      isCoverFlow: isCoverFlow === 'true' || isCoverFlow === true
     });
 
     res.status(201).json({ success: true, data: newWallpaper });
@@ -64,19 +60,19 @@ const createWallpaper = async (req, res) => {
 // @access  Public
 const getWallpapers = async (req, res) => {
   try {
-    const wallpapers = await Wallpaper.find({}).sort({ createdAt: -1 }); // Newest first
+    const wallpapers = await Wallpaper.find({}).sort({ createdAt: -1 });
     res.json({ success: true, data: wallpapers });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch wallpapers' });
   }
 };
 
-// @desc    Update wallpaper (Name, Category, Custom Stats)
+// @desc    Update wallpaper (Name, Category, Image Replacement, CoverFlow flag, Custom Stats)
 // @route   PUT /api/wallpapers/:id
 // @access  Private
 const updateWallpaper = async (req, res) => {
   try {
-    let { name, mainCategory, category, views, downloads, likes } = req.body;
+    let { name, mainCategory, category, views, downloads, likes, isCoverFlow } = req.body;
     
     const wallpaper = await Wallpaper.findById(req.params.id);
 
@@ -92,11 +88,21 @@ const updateWallpaper = async (req, res) => {
       }
     }
 
+    // If a new image file is uploaded during edit, replace the old one in Cloudinary
+    if (req.file) {
+      if (wallpaper.publicId) {
+        await cloudinary.uploader.destroy(wallpaper.publicId);
+      }
+      wallpaper.url = req.file.path;
+      wallpaper.publicId = req.file.filename;
+      wallpaper.size = (req.file.size / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
     wallpaper.name = name || wallpaper.name;
     wallpaper.mainCategory = mainCategory || wallpaper.mainCategory;
     wallpaper.category = category || wallpaper.category;
+    wallpaper.isCoverFlow = isCoverFlow === 'true' || isCoverFlow === true;
     
-    // Custom stats update (Marzi ke mutabiq values set karna)
     if (views !== undefined) wallpaper.views = Number(views);
     if (downloads !== undefined) wallpaper.downloads = Number(downloads);
     if (likes !== undefined) wallpaper.likes = Number(likes);
@@ -104,6 +110,7 @@ const updateWallpaper = async (req, res) => {
     const updatedWallpaper = await wallpaper.save();
     res.json({ success: true, data: updatedWallpaper });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ success: false, message: 'Failed to update wallpaper' });
   }
 };
@@ -119,12 +126,10 @@ const deleteWallpaper = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Wallpaper not found' });
     }
 
-    // Delete image from Cloudinary permanently
     if (wallpaper.publicId) {
       await cloudinary.uploader.destroy(wallpaper.publicId);
     }
 
-    // Delete from MongoDB
     await wallpaper.deleteOne();
 
     res.json({ success: true, message: 'Wallpaper removed entirely' });
@@ -134,12 +139,12 @@ const deleteWallpaper = async (req, res) => {
   }
 };
 
-// @desc    Update stats (Views, Downloads, Likes, Favs) & Record Activity Log
+// @desc    Update stats & Record Activity Log
 // @route   PATCH /api/wallpapers/:id/stats
 // @access  Public
 const updateStats = async (req, res) => {
   try {
-    const { action } = req.body; // 'view', 'download', 'like', 'unlike', 'fav', 'unfav'
+    const { action } = req.body;
     
     const wallpaper = await Wallpaper.findById(req.params.id);
     
@@ -157,7 +162,6 @@ const updateStats = async (req, res) => {
 
     await wallpaper.save();
 
-    // Record to Activity Log for Admin Analytics & Excel Report
     if (['view', 'download', 'like'].includes(action)) {
       await ActivityLog.create({
         wallpaperId: wallpaper._id,
