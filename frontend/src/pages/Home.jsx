@@ -1,6 +1,6 @@
 // frontend/src/pages/Home.jsx
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, X, Download, Eye, Heart, Shield, MessageSquare, ChevronLeft, ChevronRight, Sparkles, Flame, Zap, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -29,6 +29,27 @@ export default function Home() {
   // State for Full-Screen Preview Modal
   const [previewWallpaper, setPreviewWallpaper] = useState(null);
 
+  // Cover Flow State & Logic Refs
+  const coverflowCardsRef = useRef([]);
+  const [cfPosition, setCfPosition] = useState(0);
+  const [isCfDragging, setIsCfDragging] = useState(false);
+  const cfStartX = useRef(0);
+  const cfLastX = useRef(0);
+  const cfDragStartPos = useRef(0);
+  const cfVelocity = useRef(0);
+  const cfLastMoveTime = useRef(0);
+  const coverflowContainerRef = useRef(null);
+
+  // Default 6 Cover Flow Wallpapers (WLP001 to WLP006)
+  const coverflowItems = useMemo(() => [
+    { wallpaperId: 'WLP001', name: 'Cyberpunk Neon', url: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=900&q=90' },
+    { wallpaperId: 'WLP002', name: 'Valorant Fade', url: 'https://images.unsplash.com/photo-1534791547706-68c6c8c6f1c7?auto=format&fit=crop&w=900&q=90' },
+    { wallpaperId: 'WLP003', name: 'GTA V Sunset', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=900&q=90' },
+    { wallpaperId: 'WLP004', name: 'Dark Samurai', url: 'https://images.unsplash.com/photo-1497250681960-ef046c08a56e?auto=format&fit=crop&w=900&q=90' },
+    { wallpaperId: 'WLP005', name: 'Anime Vibes', url: 'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=90' },
+    { wallpaperId: 'WLP006', name: 'Supercar Night', url: 'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=900&q=90' },
+  ], []);
+
   const API_URL = import.meta.env.VITE_API_URL;
 
   // Fetch wallpapers from backend database
@@ -48,7 +69,7 @@ export default function Home() {
     fetchWallpapers();
   }, [API_URL]);
 
-  // Automatically open preview modal if URL has ?wallpaper=WLP001 (Runs only once when wallpapers load)
+  // Automatically open preview modal if URL has ?wallpaper=WLP001
   useEffect(() => {
     if (wallpapers.length > 0) {
       const params = new URLSearchParams(window.location.search);
@@ -57,11 +78,7 @@ export default function Home() {
         const foundWp = wallpapers.find(w => w.wallpaperId === wpId);
         if (foundWp) {
           setPreviewWallpaper(foundWp);
-          
-          // Clear URL parameter immediately so it doesn't loop when state updates
           window.history.replaceState({}, document.title, window.location.pathname);
-          
-          // Increment view count once
           axios.patch(`${API_URL}/wallpapers/${foundWp._id}/stats`, { action: 'view' })
             .then(() => {
               setWallpapers(prev => prev.map(w => w._id === foundWp._id ? { ...w, views: w.views + 1 } : w));
@@ -97,22 +114,99 @@ export default function Home() {
     return wallpapers.filter(w => {
       const q = searchQuery.toLowerCase();
       const matchesSearch = w.name.toLowerCase().includes(q) || w.wallpaperId.toLowerCase().includes(q) || w.category.toLowerCase().includes(q);
-      
-      // Fix: Check if mainCategory array includes activeMainCat or if activeMainCat is 'Latest'
       const matchesMain = activeMainCat === 'Latest' || (Array.isArray(w.mainCategory) ? w.mainCategory.includes(activeMainCat) : w.mainCategory === activeMainCat);
-      
       const matchesSub = activeSubCat === 'All' || w.category.toLowerCase() === activeSubCat.toLowerCase();
       return matchesSearch && matchesMain && matchesSub;
     });
   }, [wallpapers, searchQuery, activeMainCat, activeSubCat]);
 
-  // Pagination Logic: Slice wallpapers for the current page
+  // Pagination Logic
   const totalPages = Math.ceil(filteredWallpapers.length / ITEMS_PER_PAGE);
-  
   const currentWallpapers = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredWallpapers.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredWallpapers, currentPage]);
+
+  // ==========================================
+  // COVER FLOW CAROUSEL INTERACTION LOGIC
+  // ==========================================
+  const totalCfCards = coverflowItems.length;
+
+  const nextCfCard = () => {
+    setCfPosition(prev => prev + 1);
+  };
+
+  const prevCfCard = () => {
+    setCfPosition(prev => prev - 1);
+  };
+
+  // Render Cover Flow styles dynamically based on cfPosition
+  useEffect(() => {
+    const cardElements = coverflowCardsRef.current;
+    if (!cardElements.length) return;
+
+    const getCardWidth = () => cardElements[0]?.getBoundingClientRect().width || 160;
+    const getSpacing = () => {
+      const width = window.innerWidth;
+      if (width <= 390) return getCardWidth() * 0.39;
+      if (width <= 700) return getCardWidth() * 0.41;
+      if (width <= 1100) return getCardWidth() * 0.43;
+      return getCardWidth() * 0.44;
+    };
+
+    const cardWidth = getCardWidth();
+    const spacing = getSpacing();
+
+    cardElements.forEach((card, index) => {
+      if (!card) return;
+      let relative = index - cfPosition;
+      if (relative > totalCfCards / 2) relative -= totalCfCards;
+      if (relative < -totalCfCards / 2) relative += totalCfCards;
+
+      const abs = Math.abs(relative);
+      let x = 0, scale = 1, rotate = 0, opacity = 1, zIndex = 50, blur = 0;
+
+      if (abs < 0.001) {
+        x = 0; scale = 1; rotate = 0; opacity = 1; zIndex = 100; blur = 0;
+      } else if (abs <= 1) {
+        const t = abs;
+        x = Math.sign(relative) * spacing * t;
+        scale = 1 - (0.10 * t);
+        rotate = Math.sign(relative) * (8 * t);
+        opacity = 1 - (0.13 * t);
+        zIndex = 90;
+      } else if (abs <= 2) {
+        const t = abs - 1;
+        x = Math.sign(relative) * (spacing + spacing * 0.70 * t);
+        scale = 0.90 - (0.10 * t);
+        rotate = Math.sign(relative) * (8 + 4 * t);
+        opacity = 0.87 - (0.27 * t);
+        zIndex = 70;
+      } else if (abs <= 3) {
+        const t = abs - 2;
+        x = Math.sign(relative) * (spacing * 1.70 + spacing * 0.65 * t);
+        scale = 0.80 - (0.08 * t);
+        rotate = Math.sign(relative) * (12 + 3 * t);
+        opacity = 0.60 - (0.25 * t);
+        zIndex = 50;
+        blur = 0.5;
+      } else {
+        x = Math.sign(relative) * spacing * 3.0;
+        scale = 0.70;
+        rotate = Math.sign(relative) * 15;
+        opacity = 0;
+        zIndex = 1;
+        blur = 2;
+      }
+
+      const y = abs < 1 ? 0 : Math.min(abs, 3) * 2;
+
+      card.style.zIndex = zIndex;
+      card.style.opacity = opacity;
+      card.style.filter = `brightness(${1 - Math.min(abs, 3) * 0.16}) blur(${blur}px)`;
+      card.style.transform = `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), 0) scale(${scale}) rotateY(${rotate}deg)`;
+    });
+  }, [cfPosition, totalCfCards]);
 
   return (
     <div className="w-full flex-1 flex flex-col relative">
@@ -129,7 +223,7 @@ export default function Home() {
           <h1 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter brand-font text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-red-600 to-red-800 animate-float drop-shadow-[0_0_20px_rgba(220,38,38,0.4)]">
             RAWAT <span className="text-[var(--text-main)] drop-shadow-none">SHOP</span>
           </h1>
-          <p className="text-[var(--text-muted)] text-lg md:text-xl max-w-2xl mx-auto mb-10 font-bold">
+          <p className="text-[var(--text-muted)] text-lg md:text-xl max-w-2xl mx-auto mb-8 font-bold">
             Premium 3D Gaming Wallpapers. Original Quality. Zero Compression.
           </p>
 
@@ -147,6 +241,53 @@ export default function Home() {
               />
             </div>
           </div>
+
+          {/* =====================================================
+               NEW STACKED COVER FLOW SECTION (Below Search Bar)
+          ===================================================== */}
+          <div className="relative w-full max-w-3xl mt-6 flex items-center justify-center">
+            {/* Left Button */}
+            <button 
+              onClick={prevCfCard}
+              className="absolute left-0 z-50 w-11 h-11 rounded-full bg-[#111] border border-white/12 text-white text-xl flex items-center justify-center hover:bg-[#e50914] hover:border-[#e50914] transition-all shadow-lg cursor-pointer"
+              aria-label="Previous"
+            >
+              &#139;
+            </button>
+
+            {/* Coverflow Window */}
+            <div 
+              className="w-full h-[320px] sm:h-[355px] relative overflow-hidden select-none touch-pan-y"
+              ref={coverflowContainerRef}
+            >
+              <div className="absolute inset-0 pointer-events-none">
+                {coverflowItems.map((item, index) => (
+                  <div 
+                    key={item.wallpaperId}
+                    ref={el => coverflowCardsRef.current[index] = el}
+                    onClick={() => setCfPosition(index)}
+                    className="absolute left-1/2 top-1/2 w-[160px] sm:w-[200px] h-[235px] sm:h-[295px] rounded-2xl overflow-hidden cursor-pointer pointer-events-auto bg-[#111] shadow-[0_20px_45px_rgba(0,0,0,0.55)] transition-transform duration-500 ease-out"
+                    style={{ transformOrigin: 'center center' }}
+                  >
+                    <img src={item.url} alt={item.name} className="w-full h-full object-cover pointer-events-none select-none" draggable="false" />
+                    <div className="absolute left-3 bottom-3 py-1 px-2.5 rounded-lg bg-[#e50914] text-white text-[10px] font-extrabold tracking-wide shadow-md">
+                      {item.wallpaperId}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Button */}
+            <button 
+              onClick={nextCfCard}
+              className="absolute right-0 z-50 w-11 h-11 rounded-full bg-[#111] border border-white/12 text-white text-xl flex items-center justify-center hover:bg-[#e50914] hover:border-[#e50914] transition-all shadow-lg cursor-pointer"
+              aria-label="Next"
+            >
+              &#155;
+            </button>
+          </div>
+
         </div>
       </div>
 
@@ -264,7 +405,6 @@ export default function Home() {
 
         {/* 🌟 DECORATED GAMING/SEO INFO SECTION */}
         <div className="mt-16 relative rounded-3xl p-6 md:p-10 glass-card border border-red-500/30 overflow-hidden shadow-[0_0_30px_rgba(220,38,38,0.15)]">
-          {/* Background Glow & Pattern */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-red-600/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
           <div className="absolute bottom-0 left-0 w-72 h-72 bg-red-900/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -334,7 +474,6 @@ export default function Home() {
           className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => setPreviewWallpaper(null)}
         >
-          {/* Close / Back Button */}
           <button 
             onClick={() => setPreviewWallpaper(null)}
             className="absolute top-6 right-6 z-50 p-3 rounded-full bg-neutral-900/80 text-white border border-neutral-700 hover:bg-red-600 transition-colors shadow-lg cursor-pointer"
@@ -342,7 +481,6 @@ export default function Home() {
             <X size={24} />
           </button>
 
-          {/* Modal Container */}
           <div 
             className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center justify-center outline-none"
             onClick={(e) => e.stopPropagation()}
@@ -353,7 +491,6 @@ export default function Home() {
               className="max-h-[75vh] w-auto max-w-full object-contain rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)] border border-neutral-800"
             />
             
-            {/* Wallpaper Info & Actions bar */}
             <div className="mt-4 flex flex-wrap items-center justify-between w-full bg-neutral-900/90 border border-neutral-800 p-4 rounded-xl gap-4">
               <div>
                 <h3 className="text-white font-bold text-lg">{previewWallpaper.name}</h3>
