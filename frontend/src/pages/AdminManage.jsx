@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminManage.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Search, Edit, Trash2, Eye, Download, Heart, XCircle, CheckSquare, Square, Image as ImageIcon } from 'lucide-react';
+import { Search, Edit, Trash2, Eye, Download, Heart, XCircle, CheckSquare, Square, Image as ImageIcon, Flame } from 'lucide-react';
 import axios from 'axios';
 
 const MAIN_CATEGORIES = ['Latest', 'Premium', 'Mobile Wallpapers', 'Laptop Wallpapers', 'Tablet Wallpapers'];
@@ -11,7 +11,7 @@ export default function AdminManage() {
   const [wallpapers, setWallpapers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingWp, setEditingWp] = useState(null);
-  const [newImageFile, setNewImageFile] = useState(null); // New image file state for replacement
+  const [newImageFile, setNewImageFile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const API_URL = import.meta.env.VITE_API_URL;
@@ -61,7 +61,7 @@ export default function AdminManage() {
     const file = e.target.files[0];
     if (file) {
       setNewImageFile(file);
-      setEditingWp({ ...editingWp, url: URL.createObjectURL(file) }); // Show local preview
+      setEditingWp({ ...editingWp, url: URL.createObjectURL(file) });
     }
   };
 
@@ -75,9 +75,8 @@ export default function AdminManage() {
       formData.append('views', editingWp.views || 0);
       formData.append('downloads', editingWp.downloads || 0);
       formData.append('likes', editingWp.likes || 0);
-      formData.append('isCoverFlow', editingWp.isCoverFlow || false);
+      formData.append('isCoverFlow', editingWp.isCoverFlow ? 'true' : 'false'); // Fix: sending boolean correctly
 
-      // If user selected a new image file to replace the old one
       if (newImageFile) {
         formData.append('image', newImageFile);
       }
@@ -90,7 +89,7 @@ export default function AdminManage() {
       });
       
       fetchWallpapers();
-      setEditingWp(null); // Close modal
+      setEditingWp(null);
       setNewImageFile(null);
     } catch(err) {
       alert("Failed to update wallpaper");
@@ -101,6 +100,9 @@ export default function AdminManage() {
     w.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     w.wallpaperId.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Current active Cover Flow items list for the top preview strip
+  const activeCoverFlowItems = wallpapers.filter(w => w.isCoverFlow);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 relative">
@@ -209,7 +211,7 @@ export default function AdminManage() {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 mb-8">
+      <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 mb-4">
         <div>
           <h2 className="text-3xl font-black brand-font mb-1 text-[var(--text-main)]">DATABASE <span className="text-red-500">RECORDS</span></h2>
           <p className="text-[var(--text-muted)] font-bold">Manage wallpapers, cover flow items, and view full upload history.</p>
@@ -219,6 +221,38 @@ export default function AdminManage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={18} />
           <input type="text" placeholder="Search by ID or Name..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
             className="w-full theme-input rounded-full py-3 pl-12 pr-4 focus:outline-none focus:border-red-500 transition-all font-bold" />
+        </div>
+      </div>
+
+      {/* 🌟 LIVE COVER FLOW PREVIEW STRIP (Added right below search bar as requested) */}
+      <div className="glass-card p-4 rounded-2xl border border-red-500/30 mb-6 shadow-lg">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-black text-[var(--text-main)] flex items-center gap-2 uppercase tracking-wider">
+            <Flame className="text-red-500" size={18} /> Current Live Cover Flow Cards ({activeCoverFlowItems.length}/5)
+          </h3>
+          <span className="text-xs text-[var(--text-muted)] font-bold">Edit any wallpaper below to add/remove from cover flow</span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          {activeCoverFlowItems.map(wp => (
+            <div key={wp._id} className="relative rounded-xl overflow-hidden border border-red-500/50 bg-black/40 group h-24">
+              <img src={wp.url} alt={wp.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2">
+                <div>
+                  <p className="text-white text-xs font-black">{wp.wallpaperId}</p>
+                  <p className="text-[10px] text-gray-300 truncate max-w-[100px]">{wp.name}</p>
+                </div>
+              </div>
+              <span className="absolute top-1 right-1 bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">
+                ACTIVE
+              </span>
+            </div>
+          ))}
+          {activeCoverFlowItems.length === 0 && (
+            <div className="col-span-full py-6 text-center text-xs text-[var(--text-muted)] font-bold border border-dashed border-[var(--glass-border)] rounded-xl">
+              No wallpapers currently added to Cover Flow. Edit a wallpaper below and check "Show in Homepage Cover Flow Carousel".
+            </div>
+          )}
         </div>
       </div>
 
