@@ -4,6 +4,7 @@ import React, { useState, useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Sun, Moon } from 'lucide-react';
 import { ThemeContext } from '../context/ThemeContext';
+import logoImg from '../assets/logo.png'; // 🌟 Yahan image import ki hai
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -11,18 +12,16 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Check if admin is logged in
   const isAdminLoggedIn = !!sessionStorage.getItem('adminToken');
 
   return (
     <>
-      <nav className="glass sticky top-0 z-50 px-6 py-4 flex justify-between items-center transition-colors border-b border-[var(--glass-border)]">
-        {/* Logo */}
+      <nav className="glass sticky top-0 z-50 px-6 py-3 flex justify-between items-center transition-colors border-b border-[var(--glass-border)]">
+        {/* Logo Image + Brand Name */}
         <Link to="/" className="flex items-center gap-3 cursor-pointer group">
-          {/* 🌟 Custom Image Logo */}
-          <div className="w-10 h-10 flex items-center justify-center overflow-hidden rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.6)] group-hover:scale-105 transition-transform">
+          <div className="w-10 h-10 rounded-full overflow-hidden border border-red-500/50 shadow-[0_0_15px_rgba(220,38,38,0.6)] group-hover:scale-105 transition-transform bg-neutral-900 flex items-center justify-center">
             <img 
-              src="/path-to-your-logo/logo.png"  // Yahan apni logo image ka path ya URL daal de
+              src={logoImg} 
               alt="Rawat Shop Logo" 
               className="w-full h-full object-cover"
             />
@@ -66,7 +65,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-x-0 top-[73px] bg-[var(--bg-main)] backdrop-blur-xl z-40 flex flex-col p-6 gap-6 border-b border-[var(--glass-border)] shadow-2xl animate-in slide-in-from-top duration-300">
+        <div className="md:hidden fixed inset-x-0 top-[69px] bg-[var(--bg-main)] backdrop-blur-xl z-40 flex flex-col p-6 gap-6 border-b border-[var(--glass-border)] shadow-2xl animate-in slide-in-from-top duration-300">
           <Link 
             to="/" 
             onClick={() => setMobileMenuOpen(false)} 
