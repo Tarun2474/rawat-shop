@@ -51,7 +51,7 @@ export default function Navbar() {
         {/* Mobile Toggle */}
         <div className="md:hidden flex items-center gap-4">
           <button onClick={toggleTheme} className="text-[var(--text-muted)] cursor-pointer">
-            {theme === 'dark' ? <Sun size {24} /> : <Moon size={24} />}
+            {theme === 'dark' ? <Sun size={24} /> : <Moon size={24} />}
           </button>
           <button className="text-[var(--text-main)] p-2 cursor-pointer" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
@@ -59,7 +59,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* 🌟 Mobile Menu - Fixed positioning with proper dynamic theme background */}
+      {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-x-0 top-[73px] bg-[var(--bg-main)] backdrop-blur-xl z-40 flex flex-col p-6 gap-6 border-b border-[var(--glass-border)] shadow-2xl animate-in slide-in-from-top duration-300">
           <Link 
