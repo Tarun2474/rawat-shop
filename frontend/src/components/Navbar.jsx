@@ -51,7 +51,7 @@ export default function Navbar() {
         {/* Mobile Toggle */}
         <div className="md:hidden flex items-center gap-4">
           <button onClick={toggleTheme} className="text-[var(--text-muted)] cursor-pointer">
-            {theme === 'dark' ? <Sun size={24} /> : <Moon size={24} />}
+            {theme === 'dark' ? <Sun size {24} /> : <Moon size={24} />}
           </button>
           <button className="text-[var(--text-main)] p-2 cursor-pointer" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
@@ -59,20 +59,20 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Menu - Fixed positioning taaki scroll karne par bhi upar hi rahe */}
+      {/* 🌟 Mobile Menu - Fixed positioning with proper dynamic theme background */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-x-0 top-[73px] bg-black/95 backdrop-blur-xl z-40 flex flex-col p-6 gap-6 border-b border-[var(--glass-border)] shadow-2xl animate-in slide-in-from-top duration-300">
+        <div className="md:hidden fixed inset-x-0 top-[73px] bg-[var(--bg-main)] backdrop-blur-xl z-40 flex flex-col p-6 gap-6 border-b border-[var(--glass-border)] shadow-2xl animate-in slide-in-from-top duration-300">
           <Link 
             to="/" 
             onClick={() => setMobileMenuOpen(false)} 
-            className="text-xl font-black uppercase tracking-wider text-left text-[var(--text-main)] hover:text-red-500 p-2 border-b border-neutral-800"
+            className="text-xl font-black uppercase tracking-wider text-left text-[var(--text-main)] hover:text-red-500 p-2 border-b border-[var(--glass-border)]"
           >
             Wallpapers
           </Link>
           <Link 
             to="/stickers" 
             onClick={() => setMobileMenuOpen(false)} 
-            className="text-xl font-black uppercase tracking-wider text-left text-[var(--text-main)] hover:text-red-500 p-2 border-b border-neutral-800 flex items-center justify-between"
+            className="text-xl font-black uppercase tracking-wider text-left text-[var(--text-main)] hover:text-red-500 p-2 border-b border-[var(--glass-border)] flex items-center justify-between"
           >
             Stickers <span className="text-xs bg-red-600 text-white px-2.5 py-1 rounded-full">SOON</span>
           </Link>
