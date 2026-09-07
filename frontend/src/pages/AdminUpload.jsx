@@ -31,9 +31,16 @@ export default function AdminUpload() {
   const CLOUD_NAME = "c-4bb09ccbe121d1b370d07d3848e0ab";
   const UPLOAD_PRESET = "upload_shop_unsigned";
 
+  // Helper function to safely get token from anywhere it might be stored
+  const getAuthToken = () => {
+    return sessionStorage.getItem('adminToken') || 
+           sessionStorage.getItem('token') || 
+           localStorage.getItem('adminToken') || 
+           localStorage.getItem('token');
+  };
+
   useEffect(() => {
-    // Check if token exists on load, if not redirect to login
-    const token = sessionStorage.getItem('adminToken');
+    const token = getAuthToken();
     if (!token) {
       navigate('/admin/login');
       return;
@@ -79,10 +86,9 @@ export default function AdminUpload() {
   const handleUpload = async (e) => {
     e.preventDefault();
     
-    // 🌟 Check token right before uploading
-    const token = sessionStorage.getItem('adminToken');
+    const token = getAuthToken();
     if (!token) {
-      setError('Session expired! Please logout and login again.');
+      setError('Session expired or token missing! Please re-login.');
       return;
     }
 
@@ -96,7 +102,7 @@ export default function AdminUpload() {
     setError('');
 
     try {
-      // Step 1: Upload to Cloudinary directly from browser
+      // Step 1: Upload to Cloudinary directly from browser (No size limit)
       const dataForm = new FormData();
       dataForm.append('file', imageFile);
       dataForm.append('upload_preset', UPLOAD_PRESET);
@@ -117,7 +123,7 @@ export default function AdminUpload() {
       const imageUrl = cloudinaryRes.data.secure_url;
       setUploadProgress(90);
 
-      // Step 2: Send to backend database with explicit Bearer token
+      // Step 2: Send to backend database with valid Bearer token
       const payload = {
         name,
         mainCategory: JSON.stringify(selectedMainCategories),
