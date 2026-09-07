@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminDashboard.jsx
 
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Users, HardDrive, BarChart3, Eye, Download, Heart, FileImage } from 'lucide-react';
+import { TrendingUp, Users, HardDrive, BarChart3, Eye, Download, Heart, FileImage, FolderPlus, Trash2 } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,23 +22,70 @@ export default function AdminDashboard() {
   const [wallpapers, setWallpapers] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // States for Create Sub Categories feature
+  const [subCategories, setSubCategories] = useState([]);
+  const [newCatName, setNewCatName] = useState('');
+  const [subCatLoading, setSubCatLoading] = useState(false);
+
   const API_URL = import.meta.env.VITE_API_URL;
+  const token = sessionStorage.getItem('adminToken');
+
+  const fetchData = async () => {
+    try {
+      const [wpRes, catRes] = await Promise.all([
+        axios.get(`${API_URL}/wallpapers`),
+        axios.get(`${API_URL}/subcategories`)
+      ]);
+      if (wpRes.data.success) {
+        setWallpapers(wpRes.data.data);
+      }
+      if (catRes.data.success) {
+        setSubCategories(catRes.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard data", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data } = await axios.get(`${API_URL}/wallpapers`);
-        if (data.success) {
-          setWallpapers(data.data);
-        }
-      } catch (error) {
-        console.error("Error fetching dashboard data", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, [API_URL]);
+
+  const handleCreateSubCategory = async (e) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+
+    setSubCatLoading(true);
+    try {
+      const { data } = await axios.post(`${API_URL}/subcategories`, { name: newCatName }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (data.success) {
+        setNewCatName('');
+        fetchData();
+        alert('Sub-category created successfully!');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to create sub-category');
+    } finally {
+      setSubCatLoading(false);
+    }
+  };
+
+  const handleDeleteSubCategory = async (id, name) => {
+    if (window.confirm(`Delete sub-category "${name}"?`)) {
+      try {
+        await axios.delete(`${API_URL}/subcategories/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setSubCategories(subCategories.filter(c => c._id !== id));
+      } catch (err) {
+        alert('Failed to delete');
+      }
+    }
+  };
 
   const totalWallpapers = wallpapers.length;
   const totalViews = wallpapers.reduce((acc, curr) => acc + (curr.views || 0), 0);
@@ -136,6 +183,63 @@ export default function AdminDashboard() {
              ))}
              {wallpapers.length === 0 && <p className="text-[var(--text-muted)] text-center font-bold">No assets found in database.</p>}
            </div>
+        </div>
+      </div>
+
+      {/* 🌟 CREATE SUB CATEGORIES SECTION */}
+      <div className="glass-card p-6 rounded-2xl border border-[var(--glass-border)] shadow-xl space-y-6">
+        <div>
+          <h3 className="text-xl font-black brand-font mb-1 text-[var(--text-main)] flex items-center gap-2">
+            <FolderPlus className="text-red-500" /> CREATE SUB CATEGORIES
+          </h3>
+          <p className="text-xs text-[var(--text-muted)] font-bold">Add new sub-categories dynamically. Duplicate names are automatically blocked.</p>
+        </div>
+
+        {/* Create Form */}
+        <form onSubmit={handleCreateSubCategory} className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <input 
+              type="text" 
+              placeholder="Enter new sub-category (e.g., Cyberpunk, GTA VI)..." 
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              className="w-full theme-input rounded-xl p-3.5 text-sm font-bold focus:outline-none focus:border-red-500 transition-all border border-[var(--glass-border)]"
+              required
+            />
+          </div>
+          <button 
+            type="submit" 
+            disabled={subCatLoading}
+            className="bg-red-600 hover:bg-red-500 text-white font-black px-6 py-3.5 rounded-xl uppercase tracking-wider text-xs shadow-[0_0_15px_rgba(220,38,38,0.4)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-all"
+          >
+            <FolderPlus size={18} /> {subCatLoading ? 'Creating...' : 'Create Category'}
+          </button>
+        </form>
+
+        {/* Existing Sub Categories List */}
+        <div>
+          <h4 className="text-xs font-black text-[var(--text-main)] uppercase tracking-wider mb-3">
+            Existing Sub Categories ({subCategories.length})
+          </h4>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {subCategories.map(cat => (
+              <div key={cat._id} className="glass flex items-center justify-between p-3 rounded-xl border border-[var(--glass-border)]">
+                <span className="text-xs font-bold text-[var(--text-main)] truncate">{cat.name}</span>
+                <button 
+                  type="button"
+                  onClick={() => handleDeleteSubCategory(cat._id, cat.name)}
+                  className="text-[var(--text-muted)] hover:text-red-500 transition-colors p-1 cursor-pointer"
+                  title="Delete Category"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+            {subCategories.length === 0 && (
+              <p className="col-span-full text-center text-[var(--text-muted)] py-4 text-xs font-bold">No custom sub-categories created yet.</p>
+            )}
+          </div>
         </div>
       </div>
     </div>
