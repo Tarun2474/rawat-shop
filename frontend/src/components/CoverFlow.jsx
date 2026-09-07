@@ -1,22 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import './CoverFlow.css'; // Hum iska CSS alag rakh lenge taaki Tailwind/Custom styles conflict na karein
+import './CoverFlow.css';
+import axios from 'axios';
 
-export default function CoverFlow() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  
-  // Tera existing 6 wallpapers ka data (WLP001 to WLP006)
-  const wallpapers = [
-    { id: 'WLP001', img: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=900&q=90' },
-    { id: 'WLP002', img: 'https://images.unsplash.com/photo-1534791547706-68c6c8c6f1c7?auto=format&fit=crop&w=900&q=90' },
-    { id: 'WLP003', img: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=900&q=90' },
-    { id: 'WLP004', img: 'https://images.unsplash.com/photo-1497250681960-ef046c08a56e?auto=format&fit=crop&w=900&q=90' },
-    { id: 'WLP005', img: 'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=90' },
-    { id: 'WLP006', img: 'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=900&q=90' },
-  ];
-
-  const totalCards = wallpapers.length;
+export default function CoverFlow({ wallpapers = [], onSelectWallpaper }) {
   const [position, setPosition] = useState(0);
   const containerRef = useRef(null);
+
+  // Fallback if no wallpapers passed from parent
+  const displayWallpapers = wallpapers.length > 0 ? wallpapers : [
+    { _id: '1', wallpaperId: 'WLP001', url: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=900&q=90' },
+    { _id: '2', wallpaperId: 'WLP002', url: 'https://images.unsplash.com/photo-1534791547706-68c6c8c6f1c7?auto=format&fit=crop&w=900&q=90' },
+    { _id: '3', wallpaperId: 'WLP003', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=900&q=90' },
+  ];
+
+  const totalCards = displayWallpapers.length;
 
   const nextCard = () => {
     setPosition((prev) => prev + 1);
@@ -26,22 +23,34 @@ export default function CoverFlow() {
     setPosition((prev) => prev - 1);
   };
 
+  const handleCardClick = (wp, relative, abs) => {
+    if (abs < 0.001) {
+      // Agar user ne active (center) card par click kiya, toh preview modal khulega aur view count trigger hoga
+      if (onSelectWallpaper) {
+        onSelectWallpaper(wp);
+      }
+    } else {
+      // Agar side wale card par click kiya, toh usko center mein le aao
+      setPosition(position + relative);
+    }
+  };
+
   return (
     <div className="coverflow-container">
       <button className="coverflow-btn prev-btn" onClick={prevCard} aria-label="Previous">‹</button>
       
       <div className="coverflow" ref={containerRef}>
         <div className="cards">
-          {wallpapers.map((wp, index) => {
+          {displayWallpapers.map((wp, index) => {
             let relative = index - position;
             if (relative > totalCards / 2) relative -= totalCards;
             if (relative < -totalCards / 2) relative += totalCards;
 
             const abs = Math.abs(relative);
-            let x = 0, scale = 1, rotate = 0, opacity = 1, zIndex = 50, blur = 0;
+            let x = 0, scale = 1, rotate = 0, opacity = 1, zIndex = 50;
 
             if (abs < 0.001) {
-              x = 0; scale = 1; rotate = 0; opacity = 1; zIndex = 100; blur = 0;
+              x = 0; scale = 1; rotate = 0; opacity = 1; zIndex = 100;
             } else if (abs <= 1) {
               const t = abs;
               x = Math.sign(relative) * (window.innerWidth <= 700 ? 70 : 90) * t;
@@ -67,9 +76,9 @@ export default function CoverFlow() {
 
             return (
               <div 
-                key={wp.id} 
-                className="card"
-                onClick={() => setPosition(position + relative)}
+                key={wp._id || wp.wallpaperId} 
+                className="card cursor-pointer"
+                onClick={() => handleCardClick(wp, relative, abs)}
                 style={{
                   zIndex,
                   opacity,
@@ -77,8 +86,8 @@ export default function CoverFlow() {
                   transform: `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), 0) scale(${scale}) rotateY(${rotate}deg)`
                 }}
               >
-                <img src={wp.img} alt={wp.id} draggable="false" />
-                <div className="card-label">{wp.id}</div>
+                <img src={wp.url || wp.img} alt={wp.name || wp.wallpaperId} draggable="false" />
+                <div className="card-label">{wp.wallpaperId}</div>
               </div>
             );
           })}
