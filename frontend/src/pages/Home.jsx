@@ -1,7 +1,7 @@
 // frontend/src/pages/Home.jsx
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, X, Download, Eye, Heart, Shield, MessageSquare, ChevronLeft, ChevronRight, Sparkles, Flame, Zap, ShieldCheck, ChevronDown } from 'lucide-react';
+import { Search, X, Download, Eye, Heart, Shield, MessageSquare, ChevronLeft, ChevronRight, Sparkles, Flame, Zap, ShieldCheck, ChevronDown, FolderOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import WallpaperCard from '../components/WallpaperCard';
@@ -20,9 +20,9 @@ export default function Home() {
   const [activeSubCat, setActiveSubCat] = useState('All');
   const [loading, setLoading] = useState(true);
 
-  // Dynamic Sub Categories States for Filter Dropdown
+  // Dynamic Sub Categories States for Modal
   const [allSubCategories, setAllSubCategories] = useState(DEFAULT_SUB_CATEGORIES);
-  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,7 +54,6 @@ export default function Home() {
 
         if (catRes.data.success) {
           const dbCatNames = catRes.data.data.map(c => c.name);
-          // Purani default aur nayi database wali categories ko combine karke duplicates hataye aur A-Z sort kiya
           const merged = Array.from(new Set([...DEFAULT_SUB_CATEGORIES, ...dbCatNames])).sort((a, b) => a.localeCompare(b));
           setAllSubCategories(merged);
         }
@@ -223,6 +222,68 @@ export default function Home() {
 
   return (
     <div className="w-full flex-1 flex flex-col relative">
+      
+      {/* 🌟 MORE CATEGORIES POPUP MODAL */}
+      {isCategoryModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setIsCategoryModalOpen(false)}
+        >
+          <div 
+            className="glass-card w-full max-w-xl rounded-3xl p-6 border border-red-500/50 shadow-[0_0_40px_rgba(220,38,38,0.3)] animate-in zoom-in-95 max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-6 pb-3 border-b border-[var(--glass-border)]">
+              <div className="flex items-center gap-2">
+                <FolderOpen className="text-red-500" size={22} />
+                <h3 className="text-xl font-black brand-font text-[var(--text-main)] uppercase tracking-wider">
+                  Explore All <span className="text-red-500">Categories (A-Z)</span>
+                </h3>
+              </div>
+              <button 
+                onClick={() => setIsCategoryModalOpen(false)} 
+                className="text-[var(--text-muted)] hover:text-red-500 transition-colors p-1 cursor-pointer"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto custom-scrollbar pr-1 max-h-[60vh]">
+              <button
+                onClick={() => {
+                  setActiveSubCat('All');
+                  setIsCategoryModalOpen(false);
+                }}
+                className={`p-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border text-left cursor-pointer ${
+                  activeSubCat === 'All' 
+                    ? 'bg-red-600 text-white border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]' 
+                    : 'glass text-[var(--text-muted)] hover:text-[var(--text-main)] border-[var(--glass-border)]'
+                }`}
+              >
+                All Categories
+              </button>
+
+              {allSubCategories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setActiveSubCat(cat);
+                    setIsCategoryModalOpen(false);
+                  }}
+                  className={`p-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border text-left truncate cursor-pointer ${
+                    activeSubCat === cat 
+                      ? 'bg-red-600 text-white border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]' 
+                      : 'glass text-[var(--text-muted)] hover:text-[var(--text-main)] border-[var(--glass-border)]'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="relative w-full py-12 md:py-20 flex items-center justify-center overflow-hidden border-b border-[var(--glass-border)]">
         {/* Background Effects */}
@@ -340,11 +401,11 @@ export default function Home() {
           ))}
         </div>
 
-        {/* 🌟 CLEAN A-Z SUB-CATEGORIES STRIP + MORE CATEGORIES FILTER DROPDOWN */}
+        {/* 🌟 CLEAN A-Z SUB-CATEGORIES STRIP + "MORE CATEGORIES" MODAL BUTTON */}
         <div className="flex items-center gap-3 overflow-x-auto pb-8 mb-4 scrollbar-hide">
           <button 
             onClick={() => setActiveSubCat('All')}
-            className={`whitespace-nowrap px-5 py-2 rounded-lg font-bold uppercase tracking-wider text-xs transition-all border shrink-0 ${
+            className={`whitespace-nowrap px-5 py-2 rounded-lg font-bold uppercase tracking-wider text-xs transition-all border shrink-0 cursor-pointer ${
               activeSubCat === 'All' 
                 ? 'bg-red-600 text-white border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]' 
                 : 'theme-input hover:border-red-500/50 hover:text-red-500'
@@ -358,7 +419,7 @@ export default function Home() {
             <button 
               key={cat}
               onClick={() => setActiveSubCat(cat)}
-              className={`whitespace-nowrap px-5 py-2 rounded-lg font-bold uppercase tracking-wider text-xs transition-all border shrink-0 ${
+              className={`whitespace-nowrap px-5 py-2 rounded-lg font-bold uppercase tracking-wider text-xs transition-all border shrink-0 cursor-pointer ${
                 activeSubCat === cat 
                   ? 'bg-red-600 text-white border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]' 
                   : 'theme-input hover:border-red-500/50 hover:text-red-500'
@@ -368,41 +429,18 @@ export default function Home() {
             </button>
           ))}
 
-          {/* 🌟 Theme-Matched "More Categories" Filter Dropdown for Nayi/Extra Categories */}
-          <div className="relative shrink-0">
-            <button
-              onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-              className={`whitespace-nowrap px-4 py-2 rounded-lg font-bold uppercase tracking-wider text-xs transition-all border flex items-center gap-2 ${
-                !DEFAULT_SUB_CATEGORIES.includes(activeSubCat) && activeSubCat !== 'All'
-                  ? 'bg-red-600 text-white border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]'
-                  : 'theme-input hover:border-red-500/50 text-[var(--text-muted)] hover:text-[var(--text-main)]'
-              }`}
-            >
-              <span>{!DEFAULT_SUB_CATEGORIES.includes(activeSubCat) && activeSubCat !== 'All' ? activeSubCat : 'More Categories'}</span>
-              <ChevronDown size={14} className={`transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {isCategoryDropdownOpen && (
-              <div className="absolute z-50 right-0 mt-2 w-52 max-h-60 overflow-y-auto glass-card rounded-xl border border-[var(--glass-border)] shadow-2xl p-2 space-y-1 bg-neutral-900/95 backdrop-blur-xl">
-                {allSubCategories.map(cat => (
-                  <div
-                    key={cat}
-                    onClick={() => {
-                      setActiveSubCat(cat);
-                      setIsCategoryDropdownOpen(false);
-                    }}
-                    className={`px-3 py-2 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-                      activeSubCat === cat 
-                        ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.5)]' 
-                        : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-neutral-800/50'
-                    }`}
-                  >
-                    {cat}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* 🌟 "More Categories" Popup Modal Trigger Button */}
+          <button
+            onClick={() => setIsCategoryModalOpen(true)}
+            className={`whitespace-nowrap px-4 py-2 rounded-lg font-bold uppercase tracking-wider text-xs transition-all border flex items-center gap-2 shrink-0 cursor-pointer ${
+              !DEFAULT_SUB_CATEGORIES.includes(activeSubCat) && activeSubCat !== 'All'
+                ? 'bg-red-600 text-white border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]'
+                : 'theme-input hover:border-red-500/50 text-[var(--text-muted)] hover:text-[var(--text-main)]'
+            }`}
+          >
+            <span>{!DEFAULT_SUB_CATEGORIES.includes(activeSubCat) && activeSubCat !== 'All' ? activeSubCat : 'More Categories'}</span>
+            <ChevronDown size={14} />
+          </button>
         </div>
 
         {/* Wallpaper Grid */}
