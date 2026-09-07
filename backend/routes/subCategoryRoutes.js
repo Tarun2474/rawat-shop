@@ -1,8 +1,13 @@
+// backend/routes/subCategoryRoutes.js
+
 const router = require('express').Router();
 const SubCategory = require('../models/SubCategory');
-const protect = require('../middleware/authMiddleware'); // Admin protection
 
-// Get all sub-categories
+// Safe check: Agar authMiddleware function export ho raha hai ya object
+const authMiddleware = require('../middleware/authMiddleware');
+const protect = typeof authMiddleware === 'function' ? authMiddleware : authMiddleware.protect;
+
+// Get all sub-categories (Public)
 router.get('/', async (req, res) => {
   try {
     const categories = await SubCategory.find().sort({ createdAt: -1 });
