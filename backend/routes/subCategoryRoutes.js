@@ -7,10 +7,11 @@ const SubCategory = require('../models/SubCategory');
 const authMiddleware = require('../middleware/authMiddleware');
 const protect = typeof authMiddleware === 'function' ? authMiddleware : authMiddleware.protect;
 
-// Get all sub-categories (Public)
+// Get all sub-categories (Sorted Alphabetically A-Z)
 router.get('/', async (req, res) => {
   try {
-    const categories = await SubCategory.find().sort({ createdAt: -1 });
+    // 🌟 Yahan .sort({ name: 1 }) se categories A se Z order mein aayengi
+    const categories = await SubCategory.find().sort({ name: 1 });
     res.json({ success: true, data: categories });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' });
