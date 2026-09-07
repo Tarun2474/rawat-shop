@@ -28,7 +28,7 @@ export default function AdminUpload() {
   const API_URL = import.meta.env.VITE_API_URL;
 
   // Cloudinary credentials
-  const CLOUD_NAME = "c-4bb09ccbe121d1b370d07d3848e0ab";
+  const CLOUD_NAME = "mluvitu1";
   const UPLOAD_PRESET = "upload_shop_unsigned";
 
   // Helper function to safely get token from anywhere it might be stored
