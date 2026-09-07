@@ -102,7 +102,7 @@ export default function AdminUpload() {
     setError('');
 
     try {
-      // Step 1: Upload to Cloudinary directly from browser (No size limit)
+      // Step 1: Upload to Cloudinary directly from browser
       const dataForm = new FormData();
       dataForm.append('file', imageFile);
       dataForm.append('upload_preset', UPLOAD_PRESET);
@@ -121,18 +121,20 @@ export default function AdminUpload() {
       );
 
       const imageUrl = cloudinaryRes.data.secure_url;
+      const imagePublicId = cloudinaryRes.data.public_id; // 🌟 Yeh raha public_id jo Cloudinary deta hai
       setUploadProgress(90);
 
-      // Step 2: Send to backend database with valid Bearer token
+      // Step 2: Send to backend database with url and publicId
       const payload = {
         name,
         mainCategory: JSON.stringify(selectedMainCategories),
         category,
         resolution,
         isCoverFlow,
-        url: imageUrl
+        url: imageUrl,
+        publicId: imagePublicId // 🌟 Isko yahan bhej diya
       };
-
+      
       await axios.post(`${API_URL}/wallpapers`, payload, {
         headers: {
           'Authorization': `Bearer ${token}`,
