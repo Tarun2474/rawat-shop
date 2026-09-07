@@ -6,15 +6,13 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const MAIN_CATEGORIES = ['Latest', 'Premium', 'Mobile Wallpapers', 'Laptop Wallpapers', 'Tablet Wallpapers'];
-
-// Purani static categories jo pehle se thi
 const DEFAULT_SUB_CATEGORIES = ['Gods', 'Gaming', 'Anime', 'Nature', 'Cars', 'Bikes', 'Technology', 'Superheroes', 'Marvel', 'DC', 'Movies', 'Space', 'Abstract', 'Dark', 'AMOLED', 'Minimal', 'Sports', 'Fantasy', 'Sci-Fi'];
 
 export default function AdminUpload() {
   const [name, setName] = useState('');
   const [selectedMainCategories, setSelectedMainCategories] = useState(['Latest']);
   
-  // Combined Sub Categories State
+  // Dynamic Sub Categories State
   const [subCategories, setSubCategories] = useState(DEFAULT_SUB_CATEGORIES);
   const [category, setCategory] = useState(DEFAULT_SUB_CATEGORIES[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -31,17 +29,20 @@ export default function AdminUpload() {
   const API_URL = import.meta.env.VITE_API_URL;
   const token = sessionStorage.getItem('adminToken');
 
-  // Fetch dynamic sub-categories and merge with default ones, then sort A-Z
+  // 🌟 APNA CLOUDINARY CLOUD NAME YAHAN DAAL DE (jaise tera screenshot mein c-4bb0...)
+  const CLOUD_NAME = "c-4bb09ccbe121d1b370d07d3848e0ab"; // <-- Isko apne cloud name se replace kar lena agar alag ho
+  const UPLOAD_PRESET = "upload_shop_unsigned";
+
+  // Fetch dynamic sub-categories from database and merge with defaults, then sort A-Z
   useEffect(() => {
     const fetchSubCategories = async () => {
       try {
         const { data } = await axios.get(`${API_URL}/subcategories`);
         if (data.success) {
           const dbCatNames = data.data.map(c => c.name);
-          // Purani aur nayi dono ko combine karke duplicates hata diye, aur A-Z sort kar diya
           const merged = Array.from(new Set([...DEFAULT_SUB_CATEGORIES, ...dbCatNames])).sort((a, b) => a.localeCompare(b));
           setSubCategories(merged);
-          if (merged.length > 0 && !category) {
+          if (merged.length > 0) {
             setCategory(merged[0]);
           }
         }
@@ -79,34 +80,54 @@ export default function AdminUpload() {
     }
 
     setIsUploading(true);
-    setUploadProgress(0);
+    setUploadProgress(10);
     setError('');
 
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('mainCategory', JSON.stringify(selectedMainCategories));
-    formData.append('category', category);
-    formData.append('resolution', resolution);
-    formData.append('isCoverFlow', isCoverFlow); 
-    formData.append('image', imageFile);
-
     try {
-      const { data } = await axios.post(`${API_URL}/wallpapers`, formData, {
+      // 🌟 STEP 1: Direct Browser to Cloudinary Upload (Bypasses Vercel 4.5MB Limit & CORS error)
+      const dataForm = new FormData();
+      dataForm.append('file', imageFile);
+      dataForm.append('upload_preset', UPLOAD_PRESET);
+
+      setUploadProgress(30);
+
+      const cloudinaryRes = await axios.post(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        dataForm,
+        {
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round(30 + (progressEvent.loaded * 50) / progressEvent.total);
+            setUploadProgress(percentCompleted < 85 ? percentCompleted : 85);
+          }
+        }
+      );
+
+      const imageUrl = cloudinaryRes.data.secure_url;
+      setUploadProgress(90);
+
+      // 🌟 STEP 2: Send only text/URL data to your backend database (Tiny payload, zero errors)
+      const payload = {
+        name,
+        mainCategory: JSON.stringify(selectedMainCategories),
+        category,
+        resolution,
+        isCoverFlow,
+        url: imageUrl
+      };
+
+      await axios.post(`${API_URL}/wallpapers`, payload, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
+          'Content-Type': 'application/json'
         }
       });
 
-      if (data.success) {
-        navigate('/admin/manage');
-      }
+      setUploadProgress(100);
+      navigate('/admin/manage');
+
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to upload wallpaper');
+      console.error(err);
+      setError(err.response?.data?.message || err.message || 'Failed to upload wallpaper');
     } finally {
       setIsUploading(false);
     }
@@ -116,7 +137,7 @@ export default function AdminUpload() {
     <div className="max-w-4xl space-y-8 animate-in fade-in duration-500">
       <div>
         <h2 className="text-3xl font-black brand-font mb-1 text-[var(--text-main)]">UPLOAD <span className="text-red-500">ASSET</span></h2>
-        <p className="text-[var(--text-muted)] font-bold">Publish high-resolution wallpapers to MongoDB & Cloudinary.</p>
+        <p className="text-[var(--text-muted)] font-bold">Publish high-resolution wallpapers directly to Cloudinary (No size limits).</p>
       </div>
 
       <div className="glass-card rounded-3xl p-8 border border-[var(--glass-border)] shadow-xl">
@@ -127,7 +148,7 @@ export default function AdminUpload() {
             
             {/* Left Column: Image Drag/Drop Preview */}
             <div className="flex flex-col gap-4">
-              <label className="block text-[var(--text-muted)] text-xs font-black uppercase tracking-wider">Wallpaper File</label>
+              <label className="block text-[var(--text-muted)] text-xs font-black uppercase tracking-wider">Wallpaper File (Any Size)</label>
               <div className={`flex-1 min-h-[250px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center relative overflow-hidden transition-all ${preview ? 'border-red-500 bg-red-900/10' : 'border-[var(--glass-border)] theme-input hover:border-red-500/50'}`}>
                 {preview ? (
                   <>
@@ -142,7 +163,7 @@ export default function AdminUpload() {
                 ) : (
                   <>
                     <ImageIcon size={48} className="text-[var(--text-muted)] mb-4" />
-                    <p className="text-sm font-bold text-[var(--text-muted)] mb-4 text-center px-4">Upload original JPG, PNG, WEBP. Zero compression applied.</p>
+                    <p className="text-sm font-bold text-[var(--text-muted)] mb-4 text-center px-4">Upload original 4K JPG, PNG, WEBP (8MB, 10MB+ supported).</p>
                     <label className="bg-red-600/10 text-red-500 border border-red-500/50 px-6 py-2 rounded-full font-black uppercase tracking-widest cursor-pointer hover:bg-red-600 hover:text-white transition-all">
                       Browse Files
                       <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
@@ -186,9 +207,9 @@ export default function AdminUpload() {
                 </div>
               </div>
 
-              {/* 🌟 CUSTOM THEME-MATCHED SUB-CATEGORY DROPDOWN (Combined & A-Z Sorted) */}
+              {/* CUSTOM THEME-MATCHED SUB-CATEGORY DROPDOWN */}
               <div className="relative">
-                <label className="block text-[var(--text-muted)] text-xs font-black uppercase tracking-wider mb-2">Sub Category (All + Custom, A-Z)</label>
+                <label className="block text-[var(--text-muted)] text-xs font-black uppercase tracking-wider mb-2">Sub Category (Dynamic & Alphabetical)</label>
                 
                 <div 
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -251,7 +272,7 @@ export default function AdminUpload() {
             <button type="submit" disabled={isUploading || !imageFile}
               className="w-full py-4.5 rounded-xl font-black uppercase tracking-widest transition-all mt-4 brand-font text-lg flex justify-center items-center gap-3 bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)] hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
               <UploadCloud size={24} /> 
-              {isUploading ? `UPLOADING... ${uploadProgress}%` : 'PUBLISH WALLPAPER'}
+              {isUploading ? `UPLOADING TO CLOUD... ${uploadProgress}%` : 'PUBLISH WALLPAPER'}
             </button>
 
             {/* Live Progress Bar Animation */}
