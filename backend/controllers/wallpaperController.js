@@ -19,12 +19,24 @@ const generateWallpaperId = async () => {
 // @access  Private
 const createWallpaper = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No image file uploaded' });
+    let { name, mainCategory, category, resolution, isCoverFlow, url } = req.body;
+    
+    // Support direct frontend-to-cloudinary URL upload (bypassing Vercel 4.5MB limit)
+    // Fallback to req.file if uploaded via multer (for backwards compatibility)
+    let imageUrl = url;
+    let imagePublicId = '';
+    let imageSize = 'Original HD';
+
+    if (req.file) {
+      imageUrl = req.file.path;
+      imagePublicId = req.file.filename;
+      imageSize = (req.file.size / (1024 * 1024)).toFixed(2) + ' MB';
     }
 
-    let { name, mainCategory, category, resolution, isCoverFlow } = req.body;
-    
+    if (!imageUrl) {
+      return res.status(400).json({ success: false, message: 'No image URL or file provided' });
+    }
+
     if (typeof mainCategory === 'string') {
       try {
         mainCategory = JSON.parse(mainCategory);
@@ -34,17 +46,16 @@ const createWallpaper = async (req, res) => {
     }
 
     const nextId = await generateWallpaperId();
-    const sizeInMB = (req.file.size / (1024 * 1024)).toFixed(2) + ' MB';
 
     const newWallpaper = await Wallpaper.create({
       wallpaperId: nextId,
       name,
       mainCategory,
       category,
-      url: req.file.path,
-      publicId: req.file.filename,
+      url: imageUrl,
+      publicId: imagePublicId,
       resolution: resolution || 'Original HD',
-      size: sizeInMB,
+      size: imageSize,
       isCoverFlow: isCoverFlow === 'true' || isCoverFlow === true
     });
 
@@ -72,7 +83,7 @@ const getWallpapers = async (req, res) => {
 // @access  Private
 const updateWallpaper = async (req, res) => {
   try {
-    let { name, mainCategory, category, views, downloads, likes, isCoverFlow } = req.body;
+    let { name, mainCategory, category, views, downloads, likes, isCoverFlow, url } = req.body;
     
     const wallpaper = await Wallpaper.findById(req.params.id);
 
@@ -88,14 +99,16 @@ const updateWallpaper = async (req, res) => {
       }
     }
 
-    // If a new image file is uploaded during edit, replace the old one in Cloudinary
+    // If a new image file is uploaded or new URL provided during edit
     if (req.file) {
       if (wallpaper.publicId) {
-        await cloudinary.uploader.destroy(wallpaper.publicId);
+        try { await cloudinary.uploader.destroy(wallpaper.publicId); } catch (e) {}
       }
       wallpaper.url = req.file.path;
       wallpaper.publicId = req.file.filename;
       wallpaper.size = (req.file.size / (1024 * 1024)).toFixed(2) + ' MB';
+    } else if (url && url !== wallpaper.url) {
+      wallpaper.url = url;
     }
 
     wallpaper.name = name || wallpaper.name;
@@ -127,7 +140,7 @@ const deleteWallpaper = async (req, res) => {
     }
 
     if (wallpaper.publicId) {
-      await cloudinary.uploader.destroy(wallpaper.publicId);
+      try { await cloudinary.uploader.destroy(wallpaper.publicId); } catch (e) {}
     }
 
     await wallpaper.deleteOne();
