@@ -7,13 +7,16 @@ import { useNavigate } from 'react-router-dom';
 
 const MAIN_CATEGORIES = ['Latest', 'Premium', 'Mobile Wallpapers', 'Laptop Wallpapers', 'Tablet Wallpapers'];
 
+// Purani static categories jo pehle se thi
+const DEFAULT_SUB_CATEGORIES = ['Gods', 'Gaming', 'Anime', 'Nature', 'Cars', 'Bikes', 'Technology', 'Superheroes', 'Marvel', 'DC', 'Movies', 'Space', 'Abstract', 'Dark', 'AMOLED', 'Minimal', 'Sports', 'Fantasy', 'Sci-Fi'];
+
 export default function AdminUpload() {
   const [name, setName] = useState('');
   const [selectedMainCategories, setSelectedMainCategories] = useState(['Latest']);
   
-  // Dynamic Sub Categories State
-  const [subCategories, setSubCategories] = useState([]);
-  const [category, setCategory] = useState('');
+  // Combined Sub Categories State
+  const [subCategories, setSubCategories] = useState(DEFAULT_SUB_CATEGORIES);
+  const [category, setCategory] = useState(DEFAULT_SUB_CATEGORIES[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [resolution, setResolution] = useState('Original 4K');
@@ -28,16 +31,19 @@ export default function AdminUpload() {
   const API_URL = import.meta.env.VITE_API_URL;
   const token = sessionStorage.getItem('adminToken');
 
-  // Fetch dynamic sub-categories from database
+  // Fetch dynamic sub-categories and merge with default ones, then sort A-Z
   useEffect(() => {
     const fetchSubCategories = async () => {
       try {
         const { data } = await axios.get(`${API_URL}/subcategories`);
-        if (data.success && data.data.length > 0) {
-          // Map names and ensure alphabetical sorting
-          const catNames = data.data.map(c => c.name);
-          setSubCategories(catNames);
-          setCategory(catNames[0]); // Default to first item
+        if (data.success) {
+          const dbCatNames = data.data.map(c => c.name);
+          // Purani aur nayi dono ko combine karke duplicates hata diye, aur A-Z sort kar diya
+          const merged = Array.from(new Set([...DEFAULT_SUB_CATEGORIES, ...dbCatNames])).sort((a, b) => a.localeCompare(b));
+          setSubCategories(merged);
+          if (merged.length > 0 && !category) {
+            setCategory(merged[0]);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch sub-categories", err);
@@ -180,9 +186,9 @@ export default function AdminUpload() {
                 </div>
               </div>
 
-              {/* 🌟 CUSTOM THEME-MATCHED SUB-CATEGORY DROPDOWN */}
+              {/* 🌟 CUSTOM THEME-MATCHED SUB-CATEGORY DROPDOWN (Combined & A-Z Sorted) */}
               <div className="relative">
-                <label className="block text-[var(--text-muted)] text-xs font-black uppercase tracking-wider mb-2">Sub Category (Dynamic & Alphabetical)</label>
+                <label className="block text-[var(--text-muted)] text-xs font-black uppercase tracking-wider mb-2">Sub Category (All + Custom, A-Z)</label>
                 
                 <div 
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -210,9 +216,6 @@ export default function AdminUpload() {
                         {c}
                       </div>
                     ))}
-                    {subCategories.length === 0 && (
-                      <div className="p-3 text-center text-xs text-[var(--text-muted)] font-bold">No sub-categories found. Create one from dashboard!</div>
-                    )}
                   </div>
                 )}
               </div>
