@@ -7,7 +7,9 @@ import axios from 'axios';
 import WallpaperCard from '../components/WallpaperCard';
 
 const MAIN_CATEGORIES = ['Latest', 'Premium', 'Mobile Wallpapers', 'Laptop Wallpapers', 'Tablet Wallpapers'];
-const SUB_CATEGORIES = [
+
+// Purani static categories jo pehle se thi
+const DEFAULT_SUB_CATEGORIES = [
   'Gods', 'Gaming', 'Valorant', 'GTA V', 'Cyberpunk', 'God of War', 
   'Anime', 'Solo Leveling', 'Naruto', 'Jujutsu Kaisen', 'Demon Slayer', 
   'Bikes', 'Cafe Racer', 'Supercars', 'Cars', 
@@ -22,6 +24,9 @@ export default function Home() {
   const [activeMainCat, setActiveMainCat] = useState('Latest');
   const [activeSubCat, setActiveSubCat] = useState('All');
   const [loading, setLoading] = useState(true);
+
+  // 🌟 Dynamic Sub Categories State for Homepage
+  const [subCategories, setSubCategories] = useState(DEFAULT_SUB_CATEGORIES);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,21 +43,32 @@ export default function Home() {
 
   const API_URL = import.meta.env.VITE_API_URL;
 
-  // Fetch wallpapers from backend database
+  // Fetch wallpapers and dynamic sub-categories from backend database
   useEffect(() => {
-    const fetchWallpapers = async () => {
+    const fetchData = async () => {
       try {
-        const { data } = await axios.get(`${API_URL}/wallpapers`);
-        if (data.success) {
-          setWallpapers(data.data);
+        const [wpRes, catRes] = await Promise.all([
+          axios.get(`${API_URL}/wallpapers`),
+          axios.get(`${API_URL}/subcategories`)
+        ]);
+
+        if (wpRes.data.success) {
+          setWallpapers(wpRes.data.data);
+        }
+
+        if (catRes.data.success) {
+          const dbCatNames = catRes.data.data.map(c => c.name);
+          // Purani aur nayi dono ko combine karke duplicates hata diye, aur A-Z sort kar diya
+          const merged = Array.from(new Set([...DEFAULT_SUB_CATEGORIES, ...dbCatNames])).sort((a, b) => a.localeCompare(b));
+          setSubCategories(merged);
         }
       } catch (error) {
-        console.error("Error fetching wallpapers:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchWallpapers();
+    fetchData();
   }, [API_URL]);
 
   // Automatically open preview modal if URL has ?wallpaper=WLP001
@@ -330,7 +346,7 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Sub Categories (Includes Gods) */}
+        {/* 🌟 Dynamic & A-Z Sorted Sub Categories Strip for Users */}
         <div className="flex gap-3 overflow-x-auto pb-8 mb-4 scrollbar-hide snap-x">
           <button 
             onClick={() => setActiveSubCat('All')}
@@ -342,7 +358,7 @@ export default function Home() {
           >
             All Categories
           </button>
-          {SUB_CATEGORIES.map(cat => (
+          {subCategories.map(cat => (
             <button 
               key={cat}
               onClick={() => setActiveSubCat(cat)}
