@@ -19,12 +19,10 @@ const generateWallpaperId = async () => {
 // @access  Private
 const createWallpaper = async (req, res) => {
   try {
-    let { name, mainCategory, category, resolution, isCoverFlow, url } = req.body;
+    let { name, mainCategory, category, resolution, isCoverFlow, url, publicId } = req.body;
     
-    // Support direct frontend-to-cloudinary URL upload (bypassing Vercel 4.5MB limit)
-    // Fallback to req.file if uploaded via multer (for backwards compatibility)
     let imageUrl = url;
-    let imagePublicId = '';
+    let imagePublicId = publicId || ''; // Agar frontend se na aaye toh empty string
     let imageSize = 'Original HD';
 
     if (req.file) {
