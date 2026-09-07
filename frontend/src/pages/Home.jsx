@@ -8,10 +8,9 @@ import WallpaperCard from '../components/WallpaperCard';
 
 const MAIN_CATEGORIES = ['Latest', 'Premium', 'Mobile Wallpapers', 'Laptop Wallpapers', 'Tablet Wallpapers'];
 
-// Homepage par dikhne wali clean default categories (Alphabetical Order A-Z sorted)
 const DEFAULT_SUB_CATEGORIES = ['Abstract', 'AMOLED', 'Anime', 'Bikes', 'Cars', 'Dark', 'Gaming', 'Gods', 'Minimal', 'Movies', 'Sci-Fi', 'Space', 'Superheroes'];
 
-const ITEMS_PER_PAGE = 15; // 3 columns × 5 rows = 15 wallpapers per page
+const ITEMS_PER_PAGE = 15; 
 
 export default function Home() {
   const [wallpapers, setWallpapers] = useState([]);
@@ -20,17 +19,12 @@ export default function Home() {
   const [activeSubCat, setActiveSubCat] = useState('All');
   const [loading, setLoading] = useState(true);
 
-  // Dynamic Sub Categories States for Modal
   const [allSubCategories, setAllSubCategories] = useState(DEFAULT_SUB_CATEGORIES);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
-  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-
-  // State for Full-Screen Preview Modal
   const [previewWallpaper, setPreviewWallpaper] = useState(null);
 
-  // Cover Flow Interaction Refs & State
   const coverflowCardsRef = useRef([]);
   const [cfPosition, setCfPosition] = useState(0);
   const coverflowContainerRef = useRef(null);
@@ -39,7 +33,6 @@ export default function Home() {
 
   const API_URL = import.meta.env.VITE_API_URL;
 
-  // Fetch wallpapers and dynamic sub-categories from backend database
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -66,7 +59,6 @@ export default function Home() {
     fetchData();
   }, [API_URL]);
 
-  // Automatically open preview modal if URL has ?wallpaper=WLP001
   useEffect(() => {
     if (wallpapers.length > 0) {
       const params = new URLSearchParams(window.location.search);
@@ -78,7 +70,7 @@ export default function Home() {
           window.history.replaceState({}, document.title, window.location.pathname);
           axios.patch(`${API_URL}/wallpapers/${foundWp._id}/stats`, { action: 'view' })
             .then(() => {
-              setWallpapers(prev => prev.map(w => w._id === foundWp._id ? { ...w, views: w.views + 1 } : w));
+              handleUpdateStats(foundWp._id, 'view');
             })
             .catch(err => console.error("Failed to record view:", err));
         }
@@ -86,12 +78,10 @@ export default function Home() {
     }
   }, [wallpapers]);
 
-  // Reset to page 1 whenever search query or categories change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, activeMainCat, activeSubCat]);
 
-  // Update stats locally in state when user clicks view/like/download
   const handleUpdateStats = (id, action) => {
     setWallpapers(prevWallpapers => 
       prevWallpapers.map(wp => {
@@ -104,9 +94,18 @@ export default function Home() {
         return wp;
       })
     );
+    
+    // Also update preview modal stats instantly if it's open
+    setPreviewWallpaper(prev => {
+      if (prev && prev._id === id) {
+        if (action === 'view') return { ...prev, views: prev.views + 1 };
+        if (action === 'download') return { ...prev, downloads: prev.downloads + 1 };
+        if (action === 'like') return { ...prev, likes: prev.likes + 1 };
+      }
+      return prev;
+    });
   };
 
-  // Filter logic
   const filteredWallpapers = useMemo(() => {
     return wallpapers.filter(w => {
       const q = searchQuery.toLowerCase();
@@ -117,16 +116,12 @@ export default function Home() {
     });
   }, [wallpapers, searchQuery, activeMainCat, activeSubCat]);
 
-  // Pagination Logic
   const totalPages = Math.ceil(filteredWallpapers.length / ITEMS_PER_PAGE);
   const currentWallpapers = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredWallpapers.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredWallpapers, currentPage]);
 
-  // ==========================================
-  // DYNAMIC COVER FLOW ITEMS (Admin Controlled, Max 5)
-  // ==========================================
   const coverflowItems = useMemo(() => {
     const adminSelected = wallpapers.filter(w => w.isCoverFlow);
     if (adminSelected.length > 0) {
@@ -147,7 +142,6 @@ export default function Home() {
     setCfPosition(prev => (prev - 1 + totalCfCards) % totalCfCards);
   };
 
-  // Smooth 3D Positioning Effect for Cover Flow Cards
   useEffect(() => {
     const cardElements = coverflowCardsRef.current;
     if (!cardElements.length || totalCfCards === 0) return;
@@ -196,7 +190,6 @@ export default function Home() {
     });
   }, [cfPosition, totalCfCards, coverflowItems]);
 
-  // Touch & Mouse Swipe Handlers
   const handlePointerDown = (e) => {
     isDraggingRef.current = true;
     startXRef.current = e.clientX || (e.touches && e.touches[0].clientX) || 0;
@@ -223,7 +216,6 @@ export default function Home() {
   return (
     <div className="w-full flex-1 flex flex-col relative">
       
-      {/* 🌟 MORE CATEGORIES POPUP MODAL */}
       {isCategoryModalOpen && (
         <div 
           className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
@@ -284,9 +276,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Hero Section */}
       <div className="relative w-full py-12 md:py-20 flex items-center justify-center overflow-hidden border-b border-[var(--glass-border)]">
-        {/* Background Effects */}
         <div className="absolute inset-0 z-0">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse"></div>
           <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-red-900/10 rounded-full blur-[150px] mix-blend-screen"></div>
@@ -300,7 +290,6 @@ export default function Home() {
             Premium 3D Gaming Wallpapers. Original Quality. Zero Compression.
           </p>
 
-          {/* Search Bar */}
           <div className="w-full max-w-2xl relative group mb-8">
             <div className="absolute inset-0 bg-red-600/20 rounded-full blur-xl group-hover:bg-red-600/30 transition-all duration-300"></div>
             <div className="relative flex items-center glass rounded-full overflow-hidden border border-[var(--glass-border)] focus-within:border-red-500 focus-within:shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all">
@@ -315,12 +304,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* =====================================================
-               COVER FLOW CAROUSEL (Click to Open Preview Modal)
-          ===================================================== */}
           {coverflowItems.length > 0 && (
             <div className="relative w-full max-w-3xl mt-2 flex items-center justify-center px-8 md:px-12">
-              {/* Left Arrow Button */}
               <button 
                 onClick={prevCfCard}
                 className="absolute left-0 z-50 w-10 h-10 md:w-12 md:h-12 rounded-full bg-neutral-900 border border-neutral-700 text-white flex items-center justify-center hover:bg-[#e50914] hover:border-[#e50914] transition-all shadow-[0_4px_15px_rgba(0,0,0,0.6)] cursor-pointer"
@@ -329,7 +314,6 @@ export default function Home() {
                 <ChevronLeft size={24} />
               </button>
 
-              {/* Coverflow Window */}
               <div 
                 className="w-full h-[340px] sm:h-[390px] relative overflow-hidden select-none touch-pan-y"
                 ref={coverflowContainerRef}
@@ -347,7 +331,11 @@ export default function Home() {
                       ref={el => coverflowCardsRef.current[index] = el}
                       onClick={() => {
                         if (Math.abs(index - cfPosition) < 0.001 || index === cfPosition) {
+                          // 🌟 Fix: Cover Flow se preview karte hi VIEW count trigger hoga
                           setPreviewWallpaper(item);
+                          axios.patch(`${API_URL}/wallpapers/${item._id}/stats`, { action: 'view' })
+                            .then(() => handleUpdateStats(item._id, 'view'))
+                            .catch(err => console.error("Failed to record view from coverflow:", err));
                         } else {
                           setCfPosition(index);
                         }
@@ -367,7 +355,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Right Arrow Button */}
               <button 
                 onClick={nextCfCard}
                 className="absolute right-0 z-50 w-10 h-10 md:w-12 md:h-12 rounded-full bg-neutral-900 border border-neutral-700 text-white flex items-center justify-center hover:bg-[#e50914] hover:border-[#e50914] transition-all shadow-[0_4px_15px_rgba(0,0,0,0.6)] cursor-pointer"
@@ -381,10 +368,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Main Content Area */}
       <div className="max-w-[1600px] mx-auto w-full px-2 sm:px-4 md:px-8 py-10 flex-1">
         
-        {/* Main Categories */}
         <div className="flex gap-4 overflow-x-auto pb-4 mb-4 scrollbar-hide snap-x border-b border-[var(--glass-border)]">
           {MAIN_CATEGORIES.map(cat => (
             <button 
@@ -401,7 +386,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* 🌟 CLEAN A-Z SUB-CATEGORIES STRIP + "MORE CATEGORIES" MODAL BUTTON */}
         <div className="flex items-center gap-3 overflow-x-auto pb-8 mb-4 scrollbar-hide">
           <button 
             onClick={() => setActiveSubCat('All')}
@@ -414,7 +398,6 @@ export default function Home() {
             All Categories
           </button>
 
-          {/* Default Popular A-Z Categories Strip */}
           {DEFAULT_SUB_CATEGORIES.map(cat => (
             <button 
               key={cat}
@@ -429,7 +412,6 @@ export default function Home() {
             </button>
           ))}
 
-          {/* 🌟 "More Categories" Popup Modal Trigger Button */}
           <button
             onClick={() => setIsCategoryModalOpen(true)}
             className={`whitespace-nowrap px-4 py-2 rounded-lg font-bold uppercase tracking-wider text-xs transition-all border flex items-center gap-2 shrink-0 cursor-pointer ${
@@ -443,7 +425,6 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Wallpaper Grid */}
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-red-600"></div>
@@ -461,7 +442,6 @@ export default function Home() {
               ))}
             </div>
 
-            {/* Pagination Controls */}
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-2 sm:gap-3 mt-12">
                 <button
@@ -510,7 +490,6 @@ export default function Home() {
 
       </div>
 
-      {/* Preview Modal */}
       {previewWallpaper && (
         <div 
           className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
@@ -543,6 +522,11 @@ export default function Home() {
                 <span className="text-gray-400 text-xs font-bold flex items-center gap-1"><Download size={14}/> {previewWallpaper.downloads}</span>
                 <button 
                   onClick={async () => {
+                    // 🌟 Fix: Download Button dabte hi DOWNLOAD count trigger hoga
+                    axios.patch(`${API_URL}/wallpapers/${previewWallpaper._id}/stats`, { action: 'download' })
+                      .then(() => handleUpdateStats(previewWallpaper._id, 'download'))
+                      .catch(err => console.error("Failed to record download:", err));
+
                     try {
                       const response = await fetch(previewWallpaper.url);
                       const blob = await response.blob();
@@ -568,7 +552,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Footer */}
       <footer className="w-full py-6 px-4 text-center text-gray-500 text-sm mt-auto border-t border-[var(--glass-border)] flex flex-col sm:flex-row items-center justify-center gap-4">
         <span>© {new Date().getFullYear()} RAWAT SHOP. All rights reserved.</span>
         <span className="hidden sm:inline">•</span>
