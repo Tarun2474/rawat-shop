@@ -1,11 +1,11 @@
 // frontend/src/pages/AdminManage.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Search, Edit, Trash2, Eye, Download, Heart, XCircle, CheckSquare, Square, Image as ImageIcon, Flame } from 'lucide-react';
+import { Search, Edit, Trash2, Eye, Download, Heart, XCircle, CheckSquare, Square, Image as ImageIcon, Flame, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 
 const MAIN_CATEGORIES = ['Latest', 'Premium', 'Mobile Wallpapers', 'Laptop Wallpapers', 'Tablet Wallpapers'];
-const SUB_CATEGORIES = ['Gods', 'Gaming', 'Anime', 'Nature', 'Cars', 'Bikes', 'Technology', 'Superheroes', 'Marvel', 'DC', 'Movies', 'Space', 'Abstract', 'Dark', 'AMOLED', 'Minimal', 'Sports', 'Fantasy', 'Sci-Fi'];
+const DEFAULT_SUB_CATEGORIES = ['Gods', 'Gaming', 'Anime', 'Nature', 'Cars', 'Bikes', 'Technology', 'Superheroes', 'Marvel', 'DC', 'Movies', 'Space', 'Abstract', 'Dark', 'AMOLED', 'Minimal', 'Sports', 'Fantasy', 'Sci-Fi'];
 
 export default function AdminManage() {
   const [wallpapers, setWallpapers] = useState([]);
@@ -14,6 +14,10 @@ export default function AdminManage() {
   const [newImageFile, setNewImageFile] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]); // Multiple selection for batch actions
   const [loading, setLoading] = useState(true);
+
+  // Dynamic Sub Categories States for Edit Modal
+  const [subCategories, setSubCategories] = useState(DEFAULT_SUB_CATEGORIES);
+  const [isEditDropdownOpen, setIsEditDropdownOpen] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL;
   const token = sessionStorage.getItem('adminToken');
@@ -29,8 +33,23 @@ export default function AdminManage() {
     }
   };
 
+  // Fetch dynamic sub-categories and merge with defaults, then sort A-Z alphabetically
+  const fetchSubCategories = async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/subcategories`);
+      if (data.success) {
+        const dbCatNames = data.data.map(c => c.name);
+        const merged = Array.from(new Set([...DEFAULT_SUB_CATEGORIES, ...dbCatNames])).sort((a, b) => a.localeCompare(b));
+        setSubCategories(merged);
+      }
+    } catch (err) {
+      console.error("Failed to fetch sub-categories", err);
+    }
+  };
+
   useEffect(() => {
     fetchWallpapers();
+    fetchSubCategories();
   }, []);
 
   const handleDelete = async (id, name) => {
@@ -232,11 +251,38 @@ export default function AdminManage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-xs font-black text-[var(--text-muted)] uppercase">Sub Category (Includes Gods)</label>
-                  <select value={editingWp.category} onChange={e => setEditingWp({...editingWp, category: e.target.value})} className="w-full theme-input rounded-lg p-3 font-bold mt-1 cursor-pointer">
-                    {SUB_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                {/* 🌟 CUSTOM THEME-MATCHED SUB-CATEGORY DROPDOWN FOR EDIT MODAL */}
+                <div className="relative">
+                  <label className="text-xs font-black text-[var(--text-muted)] uppercase mb-2 block">Sub Category (Dynamic, A-Z)</label>
+                  
+                  <div 
+                    onClick={() => setIsEditDropdownOpen(!isEditDropdownOpen)}
+                    className="w-full theme-input rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer border border-[var(--glass-border)] hover:border-red-500/50 transition-all font-bold text-sm"
+                  >
+                    <span className="text-[var(--text-main)]">{editingWp.category || 'Select Sub Category'}</span>
+                    <ChevronDown size={18} className={`text-[var(--text-muted)] transition-transform ${isEditDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+
+                  {isEditDropdownOpen && (
+                    <div className="absolute z-50 left-0 right-0 mt-2 max-h-50 overflow-y-auto glass-card rounded-xl border border-[var(--glass-border)] shadow-2xl p-2 space-y-1 bg-neutral-900/95 backdrop-blur-xl">
+                      {subCategories.map(c => (
+                        <div
+                          key={c}
+                          onClick={() => {
+                            setEditingWp({ ...editingWp, category: c });
+                            setIsEditDropdownOpen(false);
+                          }}
+                          className={`px-4 py-2 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                            editingWp.category === c 
+                              ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.5)]' 
+                              : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-neutral-800/50'
+                          }`}
+                        >
+                          {c}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Cover Flow Checkbox in Edit Modal */}
