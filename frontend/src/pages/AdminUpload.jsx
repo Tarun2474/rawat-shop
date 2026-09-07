@@ -1,29 +1,50 @@
 // frontend/src/pages/AdminUpload.jsx
 
-import React, { useState } from 'react';
-import { UploadCloud, Image as ImageIcon, CheckSquare, Square } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { UploadCloud, Image as ImageIcon, CheckSquare, Square, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const MAIN_CATEGORIES = ['Latest', 'Premium', 'Mobile Wallpapers', 'Laptop Wallpapers', 'Tablet Wallpapers'];
-const SUB_CATEGORIES = ['Gods', 'Gaming', 'Anime', 'Nature', 'Cars', 'Bikes', 'Technology', 'Superheroes', 'Marvel', 'DC', 'Movies', 'Space', 'Abstract', 'Dark', 'AMOLED', 'Minimal', 'Sports', 'Fantasy', 'Sci-Fi'];
 
 export default function AdminUpload() {
   const [name, setName] = useState('');
-  // Multi-select categories ke liye array state (By default 'Latest' select rahega)
   const [selectedMainCategories, setSelectedMainCategories] = useState(['Latest']);
-  const [category, setCategory] = useState(SUB_CATEGORIES[0]);
+  
+  // Dynamic Sub Categories State
+  const [subCategories, setSubCategories] = useState([]);
+  const [category, setCategory] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const [resolution, setResolution] = useState('Original 4K');
-  const [isCoverFlow, setIsCoverFlow] = useState(false); // Cover Flow Checkbox State
+  const [isCoverFlow, setIsCoverFlow] = useState(false); 
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0); // Live Percentage State
+  const [uploadProgress, setUploadProgress] = useState(0); 
   const [error, setError] = useState('');
 
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
   const token = sessionStorage.getItem('adminToken');
+
+  // Fetch dynamic sub-categories from database
+  useEffect(() => {
+    const fetchSubCategories = async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/subcategories`);
+        if (data.success && data.data.length > 0) {
+          // Map names and ensure alphabetical sorting
+          const catNames = data.data.map(c => c.name);
+          setSubCategories(catNames);
+          setCategory(catNames[0]); // Default to first item
+        }
+      } catch (err) {
+        console.error("Failed to fetch sub-categories", err);
+      }
+    };
+    fetchSubCategories();
+  }, [API_URL]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -34,7 +55,6 @@ export default function AdminUpload() {
     }
   };
 
-  // Checkbox toggle handler for multiple main categories
   const toggleMainCategory = (cat) => {
     if (selectedMainCategories.includes(cat)) {
       if (selectedMainCategories.length > 1) {
@@ -61,7 +81,7 @@ export default function AdminUpload() {
     formData.append('mainCategory', JSON.stringify(selectedMainCategories));
     formData.append('category', category);
     formData.append('resolution', resolution);
-    formData.append('isCoverFlow', isCoverFlow); // Sending Cover Flow status to backend
+    formData.append('isCoverFlow', isCoverFlow); 
     formData.append('image', imageFile);
 
     try {
@@ -160,12 +180,41 @@ export default function AdminUpload() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[var(--text-muted)] text-xs font-black uppercase tracking-wider mb-2">Sub Category (Includes Gods)</label>
-                <select value={category} onChange={e => setCategory(e.target.value)}
-                  className="w-full theme-input rounded-xl py-3.5 px-4 focus:outline-none focus:border-red-500 transition-all font-bold appearance-none">
-                  {SUB_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+              {/* 🌟 CUSTOM THEME-MATCHED SUB-CATEGORY DROPDOWN */}
+              <div className="relative">
+                <label className="block text-[var(--text-muted)] text-xs font-black uppercase tracking-wider mb-2">Sub Category (Dynamic & Alphabetical)</label>
+                
+                <div 
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="w-full theme-input rounded-xl py-3.5 px-4 flex items-center justify-between cursor-pointer border border-[var(--glass-border)] hover:border-red-500/50 transition-all font-bold"
+                >
+                  <span className="text-[var(--text-main)]">{category || 'Select Sub Category'}</span>
+                  <ChevronDown size={18} className={`text-[var(--text-muted)] transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+
+                {isDropdownOpen && (
+                  <div className="absolute z-50 left-0 right-0 mt-2 max-h-60 overflow-y-auto glass-card rounded-xl border border-[var(--glass-border)] shadow-2xl p-2 space-y-1 bg-neutral-900/95 backdrop-blur-xl">
+                    {subCategories.map(c => (
+                      <div
+                        key={c}
+                        onClick={() => {
+                          setCategory(c);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`px-4 py-2.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                          category === c 
+                            ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.5)]' 
+                            : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-neutral-800/50'
+                        }`}
+                      >
+                        {c}
+                      </div>
+                    ))}
+                    {subCategories.length === 0 && (
+                      <div className="p-3 text-center text-xs text-[var(--text-muted)] font-bold">No sub-categories found. Create one from dashboard!</div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -175,7 +224,7 @@ export default function AdminUpload() {
                   placeholder="e.g. Original 4K, 1080p" />
               </div>
 
-              {/* 🌟 Add to Cover Flow Checkbox */}
+              {/* Add to Cover Flow Checkbox */}
               <div className="flex items-center gap-3 pt-2">
                 <button
                   type="button"
