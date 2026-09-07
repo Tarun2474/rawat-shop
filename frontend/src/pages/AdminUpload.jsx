@@ -12,7 +12,6 @@ export default function AdminUpload() {
   const [name, setName] = useState('');
   const [selectedMainCategories, setSelectedMainCategories] = useState(['Latest']);
   
-  // Dynamic Sub Categories State
   const [subCategories, setSubCategories] = useState(DEFAULT_SUB_CATEGORIES);
   const [category, setCategory] = useState(DEFAULT_SUB_CATEGORIES[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -27,14 +26,19 @@ export default function AdminUpload() {
 
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
-  const token = sessionStorage.getItem('adminToken');
 
-  // 🌟 APNA CLOUDINARY CLOUD NAME YAHAN DAAL DE (jaise tera screenshot mein c-4bb0...)
-  const CLOUD_NAME = "c-4bb09ccbe121d1b370d07d3848e0ab"; // <-- Isko apne cloud name se replace kar lena agar alag ho
+  // Cloudinary credentials
+  const CLOUD_NAME = "c-4bb09ccbe121d1b370d07d3848e0ab";
   const UPLOAD_PRESET = "upload_shop_unsigned";
 
-  // Fetch dynamic sub-categories from database and merge with defaults, then sort A-Z
   useEffect(() => {
+    // Check if token exists on load, if not redirect to login
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+
     const fetchSubCategories = async () => {
       try {
         const { data } = await axios.get(`${API_URL}/subcategories`);
@@ -51,7 +55,7 @@ export default function AdminUpload() {
       }
     };
     fetchSubCategories();
-  }, [API_URL]);
+  }, [API_URL, navigate]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -74,6 +78,14 @@ export default function AdminUpload() {
 
   const handleUpload = async (e) => {
     e.preventDefault();
+    
+    // 🌟 Check token right before uploading
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+      setError('Session expired! Please logout and login again.');
+      return;
+    }
+
     if (!imageFile || !name) {
       setError('Please provide a name and select an image.');
       return;
@@ -84,7 +96,7 @@ export default function AdminUpload() {
     setError('');
 
     try {
-      // 🌟 STEP 1: Direct Browser to Cloudinary Upload (Bypasses Vercel 4.5MB Limit & CORS error)
+      // Step 1: Upload to Cloudinary directly from browser
       const dataForm = new FormData();
       dataForm.append('file', imageFile);
       dataForm.append('upload_preset', UPLOAD_PRESET);
@@ -105,7 +117,7 @@ export default function AdminUpload() {
       const imageUrl = cloudinaryRes.data.secure_url;
       setUploadProgress(90);
 
-      // 🌟 STEP 2: Send only text/URL data to your backend database (Tiny payload, zero errors)
+      // Step 2: Send to backend database with explicit Bearer token
       const payload = {
         name,
         mainCategory: JSON.stringify(selectedMainCategories),
@@ -127,7 +139,11 @@ export default function AdminUpload() {
 
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || err.message || 'Failed to upload wallpaper');
+      if (err.response?.status === 401) {
+        setError('Unauthorized (401): Admin token is invalid or expired. Please re-login.');
+      } else {
+        setError(err.response?.data?.message || err.message || 'Failed to upload wallpaper');
+      }
     } finally {
       setIsUploading(false);
     }
