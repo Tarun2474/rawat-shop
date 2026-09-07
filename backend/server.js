@@ -39,6 +39,7 @@ app.use(
 const adminRoutes = require("./routes/adminRoutes");
 const wallpaperRoutes = require("./routes/wallpaperRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
+const subCategoryRoutes = require("./routes/subCategoryRoutes"); // 🌟 Added SubCategory Route
 
 // =====================================================
 // TEST ROUTE
@@ -63,6 +64,9 @@ app.use("/wallpapers", wallpaperRoutes);
 
 // Analytics
 app.use("/api/analytics", analyticsRoutes);
+
+// Sub Categories 🌟 Added here
+app.use("/subcategories", subCategoryRoutes);
 
 // =====================================================
 // 404 HANDLER
