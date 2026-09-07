@@ -1,20 +1,15 @@
 // frontend/src/pages/Home.jsx
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, X, Download, Eye, Heart, Shield, MessageSquare, ChevronLeft, ChevronRight, Sparkles, Flame, Zap, ShieldCheck } from 'lucide-react';
+import { Search, X, Download, Eye, Heart, Shield, MessageSquare, ChevronLeft, ChevronRight, Sparkles, Flame, Zap, ShieldCheck, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import WallpaperCard from '../components/WallpaperCard';
 
 const MAIN_CATEGORIES = ['Latest', 'Premium', 'Mobile Wallpapers', 'Laptop Wallpapers', 'Tablet Wallpapers'];
 
-// Purani static categories jo pehle se thi
-const DEFAULT_SUB_CATEGORIES = [
-  'Gods', 'Gaming', 'Valorant', 'GTA V', 'Cyberpunk', 'God of War', 
-  'Anime', 'Solo Leveling', 'Naruto', 'Jujutsu Kaisen', 'Demon Slayer', 
-  'Bikes', 'Cafe Racer', 'Supercars', 'Cars', 
-  'Dark', 'AMOLED', 'Neon', 'Sci-Fi', 'Superheroes', 'Marvel', 'DC', 'Minimal', 'Abstract'
-];
+// Homepage par dikhne wali clean default categories (Alphabetical Order A-Z sorted)
+const DEFAULT_SUB_CATEGORIES = ['Abstract', 'AMOLED', 'Anime', 'Bikes', 'Cars', 'Dark', 'Gaming', 'Gods', 'Minimal', 'Movies', 'Sci-Fi', 'Space', 'Superheroes'];
 
 const ITEMS_PER_PAGE = 15; // 3 columns × 5 rows = 15 wallpapers per page
 
@@ -25,8 +20,9 @@ export default function Home() {
   const [activeSubCat, setActiveSubCat] = useState('All');
   const [loading, setLoading] = useState(true);
 
-  // 🌟 Dynamic Sub Categories State for Homepage
-  const [subCategories, setSubCategories] = useState(DEFAULT_SUB_CATEGORIES);
+  // Dynamic Sub Categories States for Filter Dropdown
+  const [allSubCategories, setAllSubCategories] = useState(DEFAULT_SUB_CATEGORIES);
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,9 +54,9 @@ export default function Home() {
 
         if (catRes.data.success) {
           const dbCatNames = catRes.data.data.map(c => c.name);
-          // Purani aur nayi dono ko combine karke duplicates hata diye, aur A-Z sort kar diya
+          // Purani default aur nayi database wali categories ko combine karke duplicates hataye aur A-Z sort kiya
           const merged = Array.from(new Set([...DEFAULT_SUB_CATEGORIES, ...dbCatNames])).sort((a, b) => a.localeCompare(b));
-          setSubCategories(merged);
+          setAllSubCategories(merged);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -137,7 +133,6 @@ export default function Home() {
     if (adminSelected.length > 0) {
       return adminSelected.slice(0, 5);
     }
-    // Fallback to first 5 wallpapers if none selected by admin yet
     return wallpapers.slice(0, 5);
   }, [wallpapers]);
 
@@ -290,7 +285,6 @@ export default function Home() {
                       key={item._id || item.wallpaperId}
                       ref={el => coverflowCardsRef.current[index] = el}
                       onClick={() => {
-                        // If it's the center active card, open preview modal. Otherwise rotate to center.
                         if (Math.abs(index - cfPosition) < 0.001 || index === cfPosition) {
                           setPreviewWallpaper(item);
                         } else {
@@ -346,11 +340,11 @@ export default function Home() {
           ))}
         </div>
 
-        {/* 🌟 Dynamic & A-Z Sorted Sub Categories Strip for Users */}
-        <div className="flex gap-3 overflow-x-auto pb-8 mb-4 scrollbar-hide snap-x">
+        {/* 🌟 CLEAN A-Z SUB-CATEGORIES STRIP + MORE CATEGORIES FILTER DROPDOWN */}
+        <div className="flex items-center gap-3 overflow-x-auto pb-8 mb-4 scrollbar-hide">
           <button 
             onClick={() => setActiveSubCat('All')}
-            className={`snap-start whitespace-nowrap px-5 py-2 rounded-lg font-bold uppercase tracking-wider text-xs transition-all border ${
+            className={`whitespace-nowrap px-5 py-2 rounded-lg font-bold uppercase tracking-wider text-xs transition-all border shrink-0 ${
               activeSubCat === 'All' 
                 ? 'bg-red-600 text-white border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]' 
                 : 'theme-input hover:border-red-500/50 hover:text-red-500'
@@ -358,11 +352,13 @@ export default function Home() {
           >
             All Categories
           </button>
-          {subCategories.map(cat => (
+
+          {/* Default Popular A-Z Categories Strip */}
+          {DEFAULT_SUB_CATEGORIES.map(cat => (
             <button 
               key={cat}
               onClick={() => setActiveSubCat(cat)}
-              className={`snap-start whitespace-nowrap px-5 py-2 rounded-lg font-bold uppercase tracking-wider text-xs transition-all border ${
+              className={`whitespace-nowrap px-5 py-2 rounded-lg font-bold uppercase tracking-wider text-xs transition-all border shrink-0 ${
                 activeSubCat === cat 
                   ? 'bg-red-600 text-white border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]' 
                   : 'theme-input hover:border-red-500/50 hover:text-red-500'
@@ -371,6 +367,42 @@ export default function Home() {
               {cat}
             </button>
           ))}
+
+          {/* 🌟 Theme-Matched "More Categories" Filter Dropdown for Nayi/Extra Categories */}
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+              className={`whitespace-nowrap px-4 py-2 rounded-lg font-bold uppercase tracking-wider text-xs transition-all border flex items-center gap-2 ${
+                !DEFAULT_SUB_CATEGORIES.includes(activeSubCat) && activeSubCat !== 'All'
+                  ? 'bg-red-600 text-white border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]'
+                  : 'theme-input hover:border-red-500/50 text-[var(--text-muted)] hover:text-[var(--text-main)]'
+              }`}
+            >
+              <span>{!DEFAULT_SUB_CATEGORIES.includes(activeSubCat) && activeSubCat !== 'All' ? activeSubCat : 'More Categories'}</span>
+              <ChevronDown size={14} className={`transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isCategoryDropdownOpen && (
+              <div className="absolute z-50 right-0 mt-2 w-52 max-h-60 overflow-y-auto glass-card rounded-xl border border-[var(--glass-border)] shadow-2xl p-2 space-y-1 bg-neutral-900/95 backdrop-blur-xl">
+                {allSubCategories.map(cat => (
+                  <div
+                    key={cat}
+                    onClick={() => {
+                      setActiveSubCat(cat);
+                      setIsCategoryDropdownOpen(false);
+                    }}
+                    className={`px-3 py-2 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                      activeSubCat === cat 
+                        ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.5)]' 
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-neutral-800/50'
+                    }`}
+                  >
+                    {cat}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Wallpaper Grid */}
